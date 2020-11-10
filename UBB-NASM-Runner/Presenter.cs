@@ -24,9 +24,9 @@ namespace UBB_NASM_Runner
             var filePath = ChooseFile();
             if (!filePath.Equals(string.Empty)) {
                 View.SetTitle(Path.GetFileName(filePath));
-                View.PrintNewInstanceDecoration(counter++, filePath);
-                CompileAndRunApp(filePath);
             }
+            View.PrintNewInstanceDecoration(counter++, filePath);
+            CompileAndStartApp(filePath);
 
             var removeConsoleText = new View.RemoveConsoleText();
             while (true) {
@@ -47,17 +47,20 @@ namespace UBB_NASM_Runner
                     var oldFilePath = filePath;
                     removeConsoleText.RemoveUntilSavedCursorPosition();
                     filePath = ChooseFile();
-
-                    View.SetTitle(Path.GetFileNameWithoutExtension(filePath));
-                    View.MoveCursorUp(2);
-
-                    if (!oldFilePath.Equals(filePath)) {
-                        counter = 1;
+                    if (!filePath.Equals(string.Empty)) {
+                        View.SetTitle(Path.GetFileNameWithoutExtension(filePath));
+                        if (!oldFilePath.Equals(filePath)) {
+                            counter = 1;
+                        }
                     }
+                    else {
+                        View.ClearScreen();
+                    }
+                    
                 }
                 else if (command.Key.Equals(ConsoleKey.T)) {
                     removeConsoleText.RemoveUntilSavedCursorPosition();
-                    View.PrintNewInstanceDecoration(counter, filePath, filePath);
+                    View.PrintNewInstanceDecoration(counter, filePath, true);
                     var changeLab = (command.Modifiers & ConsoleModifiers.Control) != 0;
                     AcTest(filePath, changeLab);
 
@@ -70,7 +73,7 @@ namespace UBB_NASM_Runner
                 removeConsoleText.RemoveUntilSavedCursorPosition();
                 View.PrintNewInstanceDecoration(counter++, filePath);
 
-                CompileAndRunApp(filePath);
+                CompileAndStartApp(filePath);
             }
         }
 
@@ -229,6 +232,7 @@ namespace UBB_NASM_Runner
             if (!process.WaitForExit(5000)) {
                 return;
             }
+
             while (!process.StandardOutput.EndOfStream) {
                 var line = process.StandardOutput.ReadLine();
                 if (line == null || !line.ToLower().Contains("labs:")) continue;
@@ -311,7 +315,16 @@ namespace UBB_NASM_Runner
             return !libtypes.Equals("") ? libtypes[..^1] : libtypes;
         }
 
-        private static void CompileAndRunApp(string filePath) {
+        private static void CompileAndStartApp(string filePath) {
+            if (filePath.Equals(string.Empty)) {
+                View.PrintWarning(
+                    $"There are no .asm files in \\projects. Nothing to compile and execute.{View.Nl}" +
+                    "This program should be executed first in a directory where you " +
+                    "have your projects and the bin files provided by the university, " +
+                    $"from where these will be moved to separate folders by the program.{View.Nl}{View.Nl}");
+                return;
+            }
+
             if (CompileApp(filePath).Equals(0)) {
                 RunApp(filePath);
             }
@@ -449,19 +462,10 @@ namespace UBB_NASM_Runner
                 var clearText = new View.RemoveConsoleText();
                 clearText.SaveCursorPosition();
 
-                if (assemblyFileNames.Count.Equals(0)) {
-                    View.PrintWarning(
-                        $"There are no .asm files in \\projects. Nothing to compile and execute.{View.Nl}" +
-                        "This program should be executed first in a directory where you " +
-                        "have your projects and the bin files provided by the university, " +
-                        "from where these will be moved to separate folders by the program.");
-                    return string.Empty;
-                }
+                if (assemblyFileNames.Count.Equals(0)) return string.Empty;
 
                 View.PrintPlainText($"Type index of .asm file you want to compile and execute :{View.Nl}");
-                View.PrintOrderedListItem(assemblyFileNames.Select(
-                    Path.GetFileNameWithoutExtension).ToList());
-
+                View.PrintOrderedListItem(assemblyFileNames.Select(Path.GetFileNameWithoutExtension).ToList());
                 View.PrintInputText($"{View.Nl}index");
                 var inputError = new View.InputError();
                 inputError.SavePosition();

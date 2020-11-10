@@ -44,7 +44,15 @@ namespace UBB_NASM_Runner
         }
 
         public static void MoveCursorUp(int howManyTimes = 1) {
-            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - howManyTimes);
+            if (Console.CursorTop - howManyTimes < 0) return;
+            while (howManyTimes-- > 0) {
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - 1);
+            }
+        }
+
+        public static void ClearScreen() {
+            Console.Clear();
+            Console.SetCursorPosition(0, 0);
         }
 
         public static void CursorVisibility(bool isVisible) {
@@ -111,7 +119,8 @@ namespace UBB_NASM_Runner
 
         private static void RemovePreviousLine(int numberOfLines = 1) {
             if (numberOfLines < 0) {
-                throw new ArgumentOutOfRangeException($"numberOfLines must be greater than or equal to 0");
+                //throw new ArgumentOutOfRangeException($"numberOfLines must be greater than or equal to 0");
+                return;
             }
 
             if (Console.CursorTop.Equals(0)) {
@@ -129,7 +138,7 @@ namespace UBB_NASM_Runner
                 // we print from the same position the same length of string
                 // so I have to save cursor top because of this inconsistency
                 var cursorTop = Console.CursorTop - 1;
-                Console.Write(new string(' ', Console.WindowWidth));
+                Console.Write(new string(' ', Console.BufferWidth));
                 Console.SetCursorPosition(0, cursorTop);
             }
         }
@@ -139,26 +148,26 @@ namespace UBB_NASM_Runner
             Console.SetCursorPosition(0, Console.CursorTop - Console.WindowHeight + 2);
         }
 
-        public static void PrintNewInstanceDecoration(int counter, string middleText = "", string actest = "") {
+        public static void PrintNewInstanceDecoration(int counter, string middleText = "", bool actest = false) {
             middleText = System.IO.Path.GetFileNameWithoutExtension(middleText);
-            string counterStr;
-            if (!actest.Equals("")) {
+            var counterStr = string.Empty;
+            if (actest) {
                 counterStr = $" [ ACTest - {middleText} ] ";
             }
-            else {
+            else if (!middleText.Equals(string.Empty)) {
                 counterStr = $" [ {counter} ] ";
                 if (counter < 2) {
                     counterStr = $" < {middleText} >{counterStr}";
                 }
             }
 
-            var decorativeStr = new char[Console.WindowWidth];
-            var decorativeStrMiddle = (Console.WindowWidth - counterStr.Length) / 2;
-            for (var i = 0; i < Console.WindowWidth; i++) {
+            var decorativeStr = new char[Console.BufferWidth];
+            var decorativeStrMiddle = (Console.BufferWidth - counterStr.Length) / 2;
+            for (var i = 0; i < Console.BufferWidth; i++) {
                 if (i != decorativeStrMiddle) {
                     decorativeStr[i] = '-';
                 }
-                else {
+                else if (!counterStr.Equals(string.Empty)) {
                     foreach (var ch in counterStr) {
                         decorativeStr[i++] = ch;
                     }
@@ -195,16 +204,19 @@ namespace UBB_NASM_Runner
                     return;
                 }
 
+                var numOfLines = Console.CursorTop - _cursorTop;
                 Console.CursorVisible = false;
-                RemovalAtBottom();
-                RemovePreviousLine(Console.CursorTop - _cursorTop);
+                if (numOfLines > 1) {
+                    RemovalAtBottom();
+                    RemovePreviousLine(numOfLines - 2);
+                }
                 RemovalAtTop();
                 Console.CursorVisible = true;
             }
 
             private void RemovalAtTop() {
                 Console.SetCursorPosition(_cursorLeft, _cursorTop);
-                Console.Write(new string(' ', Console.WindowWidth - _cursorLeft));
+                Console.Write(new string(' ', Console.BufferWidth - _cursorLeft));
                 Console.SetCursorPosition(_cursorLeft, _cursorTop);
             }
 
@@ -228,6 +240,7 @@ namespace UBB_NASM_Runner
         public class InputError
         {
             private readonly RemoveConsoleText _removeConsoleText;
+            private int _warningCursorTop, _warningCursorLeft;
             private bool _isTextWritten;
 
             public InputError() {
@@ -241,6 +254,8 @@ namespace UBB_NASM_Runner
             public void PrintInputError(string text) {
                 _removeConsoleText.RemoveUntilSavedCursorPosition();
                 PrintWarning($"{Nl}{Nl}\t{text}");
+                _warningCursorLeft = Console.CursorLeft;
+                _warningCursorTop = Console.CursorTop;
                 Console.SetCursorPosition(_removeConsoleText.GetCursorLeft(), _removeConsoleText.GetCursorTop());
                 _isTextWritten = true;
             }
@@ -250,6 +265,7 @@ namespace UBB_NASM_Runner
                     throw new InvalidOperationException("no text has been written yet");
                 }
 
+                Console.SetCursorPosition(_warningCursorLeft, _warningCursorTop);
                 _removeConsoleText.RemoveUntilSavedCursorPosition();
                 _isTextWritten = false;
             }
