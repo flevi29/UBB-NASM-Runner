@@ -17,5 +17,5 @@ If you insist on not installing .NET Core Runtime [click here](https://raw.githu
 
 ## Install
 
-Simply put the executable in the directory where you have your assembly projects and all the binaries provided by the university.
+Simply put the executable in the directory where you have your assembly projects and all the [binaries](https://www.cs.ubbcluj.ro/~afra/ac/aclab.zip) provided by the university.
 Execute it there with your preferred terminal or just execute it normally.

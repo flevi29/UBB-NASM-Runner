@@ -242,6 +242,10 @@ namespace UBB_NASM_Runner
         }
 
         private static void AcTest(string filePath, bool changeLab) {
+            if (!File.Exists(Model.AcTestPath)) {
+                View.PrintWarning("Tester program not found");
+                return;
+            }
             var fileName = Path.GetFileName(filePath);
             var labCommand = GetRequiredLabString(fileName);
             var noRecordOfCurrentFile = labCommand.Equals(string.Empty);
