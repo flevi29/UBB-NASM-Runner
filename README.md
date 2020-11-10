@@ -11,7 +11,7 @@ instead of having to struggle with all those pesky terminal commands.
 ## Download
 
 - [UBB-NASM-Runner.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner.exe)
-if you have [.NET Core Runtime](https://dotnet.microsoft.com/download/dotnet-core/current/runtime) installed
+if you have [.NET Core Runtime](https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-aspnetcore-3.1.10-windows-x64-installer) installed
 - [UBB-NASM-Runner-standalone.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner-standalone.exe)
 
 ## Install

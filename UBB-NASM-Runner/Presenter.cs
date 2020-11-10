@@ -28,10 +28,10 @@ namespace UBB_NASM_Runner
             View.PrintNewInstanceDecoration(counter++, filePath);
             CompileAndStartApp(filePath);
 
-            var removeConsoleText = new View.RemoveConsoleText();
+            var consoleTextRemover = new View.ConsoleTextRemover();
             while (true) {
                 View.PrintPlainText();
-                removeConsoleText.SaveCursorPosition();
+                consoleTextRemover.SaveCursorPosition();
                 View.PrintControls();
                 View.CursorVisibility(false);
                 var command = Console.ReadKey(true);
@@ -45,7 +45,7 @@ namespace UBB_NASM_Runner
                 if (command.Key.Equals(ConsoleKey.F)) {
                     //Select which file to compile
                     var oldFilePath = filePath;
-                    removeConsoleText.RemoveUntilSavedCursorPosition();
+                    consoleTextRemover.RemoveUntilSavedCursorPosition();
                     filePath = ChooseFile();
                     if (!filePath.Equals(string.Empty)) {
                         View.SetTitle(Path.GetFileNameWithoutExtension(filePath));
@@ -59,7 +59,7 @@ namespace UBB_NASM_Runner
                     
                 }
                 else if (command.Key.Equals(ConsoleKey.T)) {
-                    removeConsoleText.RemoveUntilSavedCursorPosition();
+                    consoleTextRemover.RemoveUntilSavedCursorPosition();
                     View.PrintNewInstanceDecoration(counter, filePath, true);
                     var changeLab = (command.Modifiers & ConsoleModifiers.Control) != 0;
                     AcTest(filePath, changeLab);
@@ -70,7 +70,7 @@ namespace UBB_NASM_Runner
                     break;
                 }
 
-                removeConsoleText.RemoveUntilSavedCursorPosition();
+                consoleTextRemover.RemoveUntilSavedCursorPosition();
                 View.PrintNewInstanceDecoration(counter++, filePath);
 
                 CompileAndStartApp(filePath);
@@ -250,7 +250,7 @@ namespace UBB_NASM_Runner
             var labCommand = GetRequiredLabString(fileName);
             var noRecordOfCurrentFile = labCommand.Equals(string.Empty);
             if (changeLab || noRecordOfCurrentFile) {
-                var clearText = new View.RemoveConsoleText();
+                var clearText = new View.ConsoleTextRemover();
                 clearText.SaveCursorPosition();
                 PrintAvailableLabs();
                 labCommand = View.ReadLabCommand($"{View.Nl}lab");
@@ -463,7 +463,7 @@ namespace UBB_NASM_Runner
                     .Select(path => path.FullName)
                     .ToList();
 
-                var clearText = new View.RemoveConsoleText();
+                var clearText = new View.ConsoleTextRemover();
                 clearText.SaveCursorPosition();
 
                 if (assemblyFileNames.Count.Equals(0)) return string.Empty;

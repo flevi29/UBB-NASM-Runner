@@ -181,12 +181,12 @@ namespace UBB_NASM_Runner
             Console.WriteLine();
         }
 
-        public class RemoveConsoleText
+        public class ConsoleTextRemover
         {
             private int _cursorTop;
             private int _cursorLeft;
 
-            public RemoveConsoleText() {
+            public ConsoleTextRemover() {
                 _cursorTop = Console.CursorTop;
                 _cursorLeft = Console.CursorLeft;
             }
@@ -239,24 +239,24 @@ namespace UBB_NASM_Runner
 
         public class InputError
         {
-            private readonly RemoveConsoleText _removeConsoleText;
+            private readonly ConsoleTextRemover _consoleTextRemover;
             private int _warningCursorTop, _warningCursorLeft;
             private bool _isTextWritten;
 
             public InputError() {
-                _removeConsoleText = new RemoveConsoleText();
+                _consoleTextRemover = new ConsoleTextRemover();
             }
 
             public void SavePosition() {
-                _removeConsoleText.SaveCursorPosition();
+                _consoleTextRemover.SaveCursorPosition();
             }
 
             public void PrintInputError(string text) {
-                _removeConsoleText.RemoveUntilSavedCursorPosition();
+                _consoleTextRemover.RemoveUntilSavedCursorPosition();
                 PrintWarning($"{Nl}{Nl}\t{text}");
                 _warningCursorLeft = Console.CursorLeft;
                 _warningCursorTop = Console.CursorTop;
-                Console.SetCursorPosition(_removeConsoleText.GetCursorLeft(), _removeConsoleText.GetCursorTop());
+                Console.SetCursorPosition(_consoleTextRemover.GetCursorLeft(), _consoleTextRemover.GetCursorTop());
                 _isTextWritten = true;
             }
 
@@ -266,7 +266,7 @@ namespace UBB_NASM_Runner
                 }
 
                 Console.SetCursorPosition(_warningCursorLeft, _warningCursorTop);
-                _removeConsoleText.RemoveUntilSavedCursorPosition();
+                _consoleTextRemover.RemoveUntilSavedCursorPosition();
                 _isTextWritten = false;
             }
         }
