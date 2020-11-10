@@ -16,5 +16,7 @@ if you have [.NET Core Runtime](https://dotnet.microsoft.com/download/dotnet-cor
 
 ## Install
 
-Simply put the executable in the directory where you have your assembly projects and all the [binaries](https://www.cs.ubbcluj.ro/~afra/ac/aclab.zip) provided by the university.
+Simply put the executable in the directory where you have your assembly projects 
+and all the [binaries](https://www.cs.ubbcluj.ro/~afra/ac/aclab.zip) 
+and the [tester](https://www.cs.ubbcluj.ro/~scsanad/actest/actest.zip) provided by the university.
 Execute it there with your preferred terminal or just execute it normally.
