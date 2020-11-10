@@ -10,10 +10,10 @@ instead of having to struggle with all those pesky terminal commands.
 
 ## Download
 
-If you have .NET Core Runtime installed [click here](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner.exe). (196KB)
+If you have .NET Core Runtime installed [click here](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner.exe).
 > You probably already have it, if you don't, I recommend you install [.NET Core Runtime](https://dotnet.microsoft.com/download/dotnet-core/current/runtime)
 
-If you insist on not installing .NET Core Runtime [click here](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner-standalone.exe). (66MB)
+If you insist on not installing .NET Core Runtime [click here](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner-standalone.exe).
 
 ## Install
 
