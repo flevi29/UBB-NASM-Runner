@@ -22,16 +22,16 @@ namespace UBB_NASM_Runner
         private static readonly string[] ErrorMessages = {
             $"She sells seashells by the seashore.",
 
-            $"How much wood would a woodchuck chuck if a woodchuck could chuck wood?{View.Nl}" +
-            $"He would chuck, he would, as much as he could, and chuck as much wood{View.Nl}" +
+            $"How much wood would a woodchuck chuck if a woodchuck could chuck wood?{Nl}" +
+            $"He would chuck, he would, as much as he could, and chuck as much wood{Nl}" +
             $"As a woodchuck would if a woodchuck could chuck wood.",
 
-            $"If you must cross a course cross cow across a crowded cow crossing,{View.Nl}" +
+            $"If you must cross a course cross cow across a crowded cow crossing,{Nl}" +
             $"cross the cross coarse cow across the crowded cow crossing carefully.",
             
             "Which witch switched the Swiss wristwatches?",
             
-            $"To begin to toboggan first buy a toboggan, but don't buy too big a toboggan.{View.Nl}" +
+            $"To begin to toboggan first buy a toboggan, but don't buy too big a toboggan.{Nl}" +
             "Too big a toboggan is too big a toboggan to buy to begin to toboggan."
         };
 
@@ -41,6 +41,10 @@ namespace UBB_NASM_Runner
 
         public static void SetTitle(string title) {
             Console.Title = title;
+        }
+
+        public static ConsoleKeyInfo ReadKey() {
+            return Console.ReadKey(true);
         }
 
         public static void MoveCursorUp(int howManyTimes = 1) {

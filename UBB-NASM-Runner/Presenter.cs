@@ -30,9 +30,9 @@ namespace UBB_NASM_Runner
                 consoleTextRemover.SaveCursorPosition();
                 View.PrintControls();
                 View.CursorVisibility(false);
-                var command = Console.ReadKey(true);
+                var command = View.ReadKey();
                 while (!IsAllowedCommand(command, filePath)) {
-                    command = Console.ReadKey(true);
+                    command = View.ReadKey();
                 }
 
                 View.CursorVisibility(true);
