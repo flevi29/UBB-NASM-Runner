@@ -532,7 +532,7 @@ namespace UBB_NASM_Runner
 
             var wait = 1;
             while (row1 != row2) {
-                View.PrintPlainText(lines[row1++]);
+                View.PrintPlainOutputText(lines[row1++]);
                 // Printing it out all fast for some reason messes with Windows Terminal, and will not display
                 // most lines that it scrolled past by, slowing it down seemingly resolves this problem
                 if (wait++ % (Console.WindowHeight - 2) == 0) {

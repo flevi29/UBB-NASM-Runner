@@ -281,7 +281,11 @@ namespace UBB_NASM_Runner
             private static ConsoleColor _preBackground, _preForeground;
             private static bool _isSet;
 
-            public static void SetColors(ConsoleColor foreground, ConsoleColor background = ConsoleColor.Black) {
+            public static void SetColors(ConsoleColor foreground) {
+                SetColors(foreground, Console.BackgroundColor);
+            }
+            
+            public static void SetColors(ConsoleColor foreground, ConsoleColor background) {
                 if (!_isSet) {
                     _preBackground = Console.BackgroundColor;
                     _preForeground = Console.ForegroundColor;
@@ -305,22 +309,28 @@ namespace UBB_NASM_Runner
 
         private static void Print(
             string text,
-            bool printNewLine = false,
-            ConsoleColor foreground = ConsoleColor.Gray,
-            ConsoleColor background = ConsoleColor.Black
+            bool printNewLine = false
         ) {
-            if (printNewLine) {
-                text += Nl;
-            }
-
-            Print(text, foreground, background);
+            Print(text, Console.ForegroundColor, Console.BackgroundColor, printNewLine);
+        }
+        
+        private static void Print(
+            string text,
+            ConsoleColor foreground,
+            bool printNewLine = false
+        ) {
+            Print(text, foreground, Console.BackgroundColor, printNewLine);
         }
 
         private static void Print(
             string text,
-            ConsoleColor foreground = ConsoleColor.Gray,
-            ConsoleColor background = ConsoleColor.Black
+            ConsoleColor foreground,
+            ConsoleColor background,
+            bool printNewLine = false
         ) {
+            if (printNewLine) {
+                text += Nl;
+            }
             var i = 0;
             var preString = "";
             while (i < text.Length && new[] {'\t', '\r', '\n', ' '}.Contains(text[i])) {
@@ -338,19 +348,23 @@ namespace UBB_NASM_Runner
         }
 
         public static void PrintWarning(string text) {
-            Print(text, true, Darkyellow);
+            Print(text, Darkyellow, true);
         }
 
         public static void PrintError(Exception exception) {
-            Print($"{Nl}{exception.GetType()} : {exception.Message}", true, Darkred);
+            Print($"{Nl}{exception.GetType()} : {exception.Message}", Darkred, true);
         }
 
         public static void PrintSpecialPlainText(string text) {
-            Print(text, true, Black, Gray);
+            Print(text, Black, Gray, true);
         }
 
         public static void PrintPlainText(string text = "") {
-            Print(text, true, White);
+            Print(text, White, true);
+        }
+        
+        public static void PrintPlainOutputText(string text = "") {
+            Print(text, Gray, true);
         }
 
         public static void PrintOrderedListItem(IEnumerable<string> listItems) {
