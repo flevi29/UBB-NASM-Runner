@@ -105,7 +105,7 @@ namespace UBB_NASM_Runner
                 "RETURN", "compile&execute",
                 "Q", "exit",
                 "F", "choose file",
-                "^T/T", "ACtest"
+                "Ctr-T/T", "ACtest"
             };
 
             for (var i = 0; i < newInstanceString.Length; i++) {
