@@ -176,9 +176,10 @@ namespace UBB_NASM_Runner
                 }
             }
 
-            Console.CursorLeft = 0;
+            var cursorTop = Console.CursorTop + 2;
+            Console.SetCursorPosition(0, Console.CursorTop);
             PrintSpecialPlainText(new string(decorativeStr));
-            Console.WriteLine();
+            Console.SetCursorPosition(0, cursorTop);
         }
 
         public class ConsoleTextRemover

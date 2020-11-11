@@ -10,10 +10,6 @@ namespace UBB_NASM_Runner
 {
     internal static class Presenter
     {
-        private static readonly string[] ImportantFiles = {
-            "actest.exe", "io.inc", "io.lib", "Kernel32.Lib",
-            "ld.exe", "mio.inc", "mio.lib", "nasm.exe", "nlink.exe", "start.obj"
-        };
 
         public static void Start() {
             View.SetTitle("NASM");
@@ -161,7 +157,7 @@ namespace UBB_NASM_Runner
                 foreach (var filePath in filePaths) {
                     var filePathExt = Path.GetExtension(filePath).ToLower();
                     var fPathDir = Path.GetDirectoryName(filePath);
-                    if (ImportantFiles.Contains(Path.GetFileName(filePath))) {
+                    if (Model.ImportantFiles.Contains(Path.GetFileName(filePath))) {
                         if (Model.BinPath.Equals(fPathDir)) continue;
                         // core files to be moved to \bin
                         var destPath = Path.Combine(Model.BinPath, Path.GetFileName(filePath));
@@ -216,7 +212,9 @@ namespace UBB_NASM_Runner
                 .Where(line =>
                     Regex.IsMatch(line, $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$"))
                 .Select(line => new {Line = line}).ToList();
-            return fileLines.First().Line.Split(' ').First();
+            return fileLines.Count.Equals(0) 
+                ? string.Empty 
+                : fileLines.First().Line.Split(' ').First();
         }
 
         private static void PrintAvailableLabs() {
@@ -319,6 +317,13 @@ namespace UBB_NASM_Runner
             return !libtypes.Equals("") ? libtypes[..^1] : libtypes;
         }
 
+        private static List<string> GetMissingImportantFiles() {
+            return Model.ImportantFiles
+                .Select(file => Path.Combine(Model.BinPath, file))
+                .Where(filePath => !File.Exists(filePath) && !filePath.Equals(Model.AcTestPath))
+                .ToList();
+        }
+        
         private static void CompileAndStartApp(string filePath) {
             if (filePath.Equals(string.Empty)) {
                 View.PrintWarning(
@@ -326,6 +331,16 @@ namespace UBB_NASM_Runner
                     "This program should be executed first in a directory where you " +
                     "have your projects and the bin files provided by the university, " +
                     $"from where these will be moved to separate folders by the program.{View.Nl}{View.Nl}");
+                return;
+            }
+
+            var missingFiles = GetMissingImportantFiles();
+            if (!missingFiles.Count.Equals(0)) {
+                var warning = $"The following files are missing : {View.Nl}";
+                warning = missingFiles.Aggregate(
+                    warning, (current, missingFile) => current + $"\t{missingFile}{View.Nl}"
+                    );
+                View.PrintWarning(warning);
                 return;
             }
 
