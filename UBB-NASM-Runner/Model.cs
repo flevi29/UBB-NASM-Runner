@@ -5,6 +5,9 @@ namespace UBB_NASM_Runner
 {
     internal static class Model
     {
+        private static readonly string TempTempPath =
+            Environment.ExpandEnvironmentVariables(@"%userprofile%\AppData\Local\Temp");
+        
         public static readonly string RootPath = Directory.GetCurrentDirectory(),
             BinPath = Path.Combine(RootPath, "bin"),
             ProjectsPath = Path.Combine(RootPath, "projects"),
@@ -13,6 +16,9 @@ namespace UBB_NASM_Runner
             NLinkPath = Path.Combine(BinPath, "nlink.exe"),
             LabFilePath = Path.Combine(BinPath, "labs.txt"),
             AcTestPath = Path.Combine(BinPath, "actest.exe"),
+            TempPath = Directory.Exists(TempTempPath)
+                ? TempTempPath
+                : BinPath,
             PowerShellPath = Environment.ExpandEnvironmentVariables(
                 "%SystemRoot%\\system32\\WindowsPowerShell\\v1.0\\powershell.exe");
         

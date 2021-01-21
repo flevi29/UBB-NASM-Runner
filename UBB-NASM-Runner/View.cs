@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -13,21 +14,23 @@ namespace UBB_NASM_Runner
             Darkred = ConsoleColor.DarkRed,
             White = ConsoleColor.White,
             Black = ConsoleColor.Black,
+            Blue = ConsoleColor.Blue,
             Gray = ConsoleColor.Gray,
             Magenta = ConsoleColor.Magenta,
             Cyan = ConsoleColor.Cyan;
 
         public static readonly string Nl = Environment.NewLine;
-        
+        //private static uint _lengthOfControls;
+
         private static readonly string[] ErrorMessages = {
-            $"She sells seashells by the seashore.",
+            "She sells seashells by the seashore.",
 
             $"How much wood would a woodchuck chuck if a woodchuck could chuck wood?{Nl}" +
             $"He would chuck, he would, as much as he could, and chuck as much wood{Nl}" +
-            $"As a woodchuck would if a woodchuck could chuck wood.",
+            "as a woodchuck would if a woodchuck could chuck wood.",
 
             $"If you must cross a course cross cow across a crowded cow crossing,{Nl}" +
-            $"cross the cross coarse cow across the crowded cow crossing carefully.",
+            "cross the cross coarse cow across the crowded cow crossing carefully.",
             
             "Which witch switched the Swiss wristwatches?",
             
@@ -35,67 +38,87 @@ namespace UBB_NASM_Runner
             "Too big a toboggan is too big a toboggan to buy to begin to toboggan."
         };
 
-        private static string GetRandomErrorMessage() {
+        public static string GetRandomErrorMessage() {
             return ErrorMessages[new Random().Next(ErrorMessages.Length)];
         }
 
         public static void SetTitle(string title) {
-            Console.Title = title;
+            if (!title.Equals(string.Empty)) {
+                Console.Title = title;
+            }
         }
 
         public static ConsoleKeyInfo ReadKey() {
             return Console.ReadKey(true);
         }
 
-        public static void MoveCursorUp(int howManyTimes = 1) {
-            if (Console.CursorTop - howManyTimes < 0) return;
-            while (howManyTimes-- > 0) {
-                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - 1);
-            }
-        }
-
         public static void ClearScreen() {
             Console.Clear();
-            Console.SetCursorPosition(0, 0);
+            Console.WriteLine("\x1b[3J");
+            Console.SetCursorPosition(0,0);
         }
 
-        public static void CursorVisibility(bool isVisible) {
-            Console.CursorVisible = isVisible;
-        }
+        // public static void CursorVisibility(bool isVisible) {
+        //     if (!Console.CursorVisible.Equals(isVisible)) {
+        //         Console.CursorVisible = isVisible;
+        //     }
+        // }
+
+        // public static void SetCursorLeftmost() {
+        //     Console.SetCursorPosition(0, Console.CursorTop);
+        // }
+        //
+        // public static void MoveCursorUp() {
+        //     Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - 1);
+        // }
+        //
+        // public static void ScrollDown() {
+        //     CursorVisibility(false);
+        //     Console.Write(string.Concat(Enumerable.Repeat(Nl, Console.WindowHeight - 2)));
+        //     Console.SetCursorPosition(0, Console.CursorTop - Console.WindowHeight + 2);
+        //     CursorVisibility(true);
+        // }
 
         public static int ReadIndexFromInput() {
+            return int.TryParse(ReadFromInput(true), out var index) 
+                ? index 
+                : -1;
+        }
+
+        public static string ReadFromInput() {
+            return ReadFromInput(false);
+        }
+        
+        private static string ReadFromInput(bool isNumber) {
+            ConsoleColors.SetAndPushDefaultColors();
             var input = "";
             char ch;
-            var number = 0;
+            var numberOfChars = 0;
 
             while (!(ch = Console.ReadKey(true).KeyChar).Equals(Nl[0])) {
-                if (ch == '\b' && number != 0) {
+                if (ch == '\b' && numberOfChars != 0) {
                     input = input.Remove(input.Length - 1);
-                    number--;
+                    numberOfChars--;
                     Console.Write("\b \b");
                 }
-                else if (ch != '\b' && number != 7) {
+                else if (numberOfChars != 10 && ch != '\b') {
+                    if (isNumber && ch < '0' || ch > '9') {
+                        continue;
+                    }
                     Console.Write(ch);
                     input += ch;
-                    number++;
+                    numberOfChars++;
                 }
             }
-
-            return int.TryParse(input, out number) ? number : -1;
+            
+            ConsoleColors.SetPreviousAndPopColors();
+            return input;
         }
         
         public static string ReadLabCommand(string inputText) {
             PrintInputText(inputText);
-            var inputError = new InputError();
-            inputError.SavePosition();
-            var labCommand = Console.ReadLine();
-            while (Regex.IsMatch(labCommand ?? string.Empty, @"^\s*$")) {
-                inputError.PrintInputError(GetRandomErrorMessage());
-                labCommand = Console.ReadLine();
-                inputError.RemoveUntilSavedPosition();
-            }
-
-            return labCommand;
+            var labCommand = ReadFromInput();
+            return Regex.IsMatch(labCommand ?? string.Empty, @"^\s*$") ? string.Empty : labCommand;
         }
 
         public static void PrintControls() {
@@ -108,202 +131,99 @@ namespace UBB_NASM_Runner
                 "Ctr-T/T", "ACtest"
             };
 
+            //_lengthOfControls = 0;
+
             for (var i = 0; i < newInstanceString.Length; i++) {
-                Console.ForegroundColor = Green;
+                //_lengthOfControls += (uint)newInstanceString[i].Length;
+                ConsoleColors.SetAndPushColors(Green);
                 Console.Write(newInstanceString[i++]);
-                Console.ForegroundColor = Yellow;
+                ConsoleColors.SetPreviousAndPopColors();
+                ConsoleColors.SetAndPushColors(Yellow);
                 Console.Write(line);
-                Console.ForegroundColor = Cyan;
-                Console.Write(newInstanceString[i] + tab);
-            }
-
-            Console.ResetColor();
-            Console.WriteLine();
-        }
-
-        private static void RemovePreviousLine(int numberOfLines = 1) {
-            if (numberOfLines < 0) {
-                //throw new ArgumentOutOfRangeException($"numberOfLines must be greater than or equal to 0");
-                return;
-            }
-
-            if (Console.CursorTop.Equals(0)) {
-                return;
-            }
-
-            Console.SetCursorPosition(0, Console.CursorTop);
-            while (numberOfLines-- > 0) {
-                if (Console.CursorTop.Equals(0)) {
-                    break;
+                ConsoleColors.SetPreviousAndPopColors();
+                //_lengthOfControls += (uint)newInstanceString[i].Length;
+                ConsoleColors.SetAndPushColors(Cyan);
+                Console.Write(newInstanceString[i]);
+                if (!i.Equals(newInstanceString.Length - 1)) {
+                    Console.Write(tab);
                 }
-
-                // Some unexplainable f***** up s*** happens here too
-                // sometimes the cursor goes new line sometimes it doesn't, even though
-                // we print from the same position the same length of string
-                // so I have to save cursor top because of this inconsistency
-                var cursorTop = Console.CursorTop - 1;
-                Console.Write(new string(' ', Console.BufferWidth));
-                Console.SetCursorPosition(0, cursorTop);
+                ConsoleColors.SetPreviousAndPopColors();
             }
+
+            // _lengthOfControls += (uint) (newInstanceString.Length / 2 * line.Length +
+            //                              (newInstanceString.Length / 2 - 1) * tab.Length);
         }
 
-        public static void ScrollDown() {
-            Console.Write(string.Concat(Enumerable.Repeat(Nl, Console.WindowHeight - 2)));
-            Console.SetCursorPosition(0, Console.CursorTop - Console.WindowHeight + 2);
+        public static void PrintAcTestDecoration() {
+            PrintNewInstanceDecoration(0, "ACTest");
         }
-
-        public static void PrintNewInstanceDecoration(int counter, string middleText = "", bool actest = false) {
+        
+        public static void PrintNewInstanceDecoration(uint counter, string middleText = "") {
             middleText = System.IO.Path.GetFileNameWithoutExtension(middleText);
-            var counterStr = string.Empty;
-            if (actest) {
-                counterStr = $" [ ACTest - {middleText} ] ";
+            if (middleText.Length > 15) {
+                middleText = middleText.Substring(0, 13) + "..";
             }
-            else if (!middleText.Equals(string.Empty)) {
-                counterStr = $" [ {counter} ] ";
-                if (counter < 2) {
-                    counterStr = $" < {middleText} >{counterStr}";
-                }
-            }
-
-            var decorativeStr = new char[Console.BufferWidth];
-            var decorativeStrMiddle = (Console.BufferWidth - counterStr.Length) / 2;
-            for (var i = 0; i < Console.BufferWidth; i++) {
-                if (i != decorativeStrMiddle) {
-                    decorativeStr[i] = '-';
-                }
-                else if (!counterStr.Equals(string.Empty)) {
-                    foreach (var ch in counterStr) {
-                        decorativeStr[i++] = ch;
-                    }
-
-                    i--;
-                }
-            }
-
-            var cursorTop = Console.CursorTop + 2;
-            Console.SetCursorPosition(0, Console.CursorTop);
-            PrintSpecialPlainText(new string(decorativeStr));
-            Console.SetCursorPosition(0, cursorTop);
-        }
-
-        public class ConsoleTextRemover
-        {
-            private int _cursorTop;
-            private int _cursorLeft;
-
-            public ConsoleTextRemover() {
-                _cursorTop = Console.CursorTop;
-                _cursorLeft = Console.CursorLeft;
-            }
+            string finalMidText;
             
-            public void SaveCursorPosition() {
-                _cursorTop = Console.CursorTop;
-                _cursorLeft = Console.CursorLeft;
+            if (middleText.Equals("ACTest")) {
+                finalMidText = $"<{middleText}>";
             }
-
-            public void RemoveUntilSavedCursorPosition() {
-                var secondCursorTop = Console.CursorTop;
-                if (secondCursorTop < _cursorTop) {
-                    //throw new InvalidOperationException("cursor top is behind the starting point");
-                    // maybe it should just return; but that might ignore potential problematic behaviour
-                    return;
+            else if (counter != 0) {
+                finalMidText = $" <{counter}> ";
+                if (counter < 2 && !middleText.Equals(string.Empty)) {
+                    finalMidText = $" {middleText}{finalMidText}";
                 }
-
-                var numOfLines = Console.CursorTop - _cursorTop;
-                Console.CursorVisible = false;
-                if (numOfLines > 1) {
-                    RemovalAtBottom();
-                    RemovePreviousLine(numOfLines - 2);
-                }
-                RemovalAtTop();
-                Console.CursorVisible = true;
+            }
+            else {
+                finalMidText = " +++ ";
             }
 
-            private void RemovalAtTop() {
-                Console.SetCursorPosition(_cursorLeft, _cursorTop);
-                Console.Write(new string(' ', Console.BufferWidth - _cursorLeft));
-                Console.SetCursorPosition(_cursorLeft, _cursorTop);
+            //               -==: EXAMPLE <4> :==-
+            finalMidText = $"-==:{finalMidText}:==-";
+
+            var count = Console.WindowWidth / 2 - finalMidText.Length / 2;
+            if (count > 0) {
+                finalMidText = new string(' ', count) + finalMidText;
             }
 
-            private void RemovalAtBottom() {
-                var cursorLeft = Console.CursorLeft;
-                var cursorTop = Console.CursorTop;
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.Write(new string(' ', cursorLeft));
-                Console.SetCursorPosition(0, cursorTop - 1);
-            }
-
-            public int GetCursorTop() {
-                return _cursorTop;
-            }
-
-            public int GetCursorLeft() {
-                return _cursorLeft;
-            }
-        }
-
-        public class InputError
-        {
-            private readonly ConsoleTextRemover _consoleTextRemover;
-            private int _warningCursorTop, _warningCursorLeft;
-            private bool _isTextWritten;
-
-            public InputError() {
-                _consoleTextRemover = new ConsoleTextRemover();
-            }
-
-            public void SavePosition() {
-                _consoleTextRemover.SaveCursorPosition();
-            }
-
-            public void PrintInputError(string text) {
-                _consoleTextRemover.RemoveUntilSavedCursorPosition();
-                PrintWarning($"{Nl}{Nl}\t{text}");
-                _warningCursorLeft = Console.CursorLeft;
-                _warningCursorTop = Console.CursorTop;
-                Console.SetCursorPosition(_consoleTextRemover.GetCursorLeft(), _consoleTextRemover.GetCursorTop());
-                _isTextWritten = true;
-            }
-
-            public void RemoveUntilSavedPosition() {
-                if (!_isTextWritten) {
-                    throw new InvalidOperationException("no text has been written yet");
-                }
-
-                Console.SetCursorPosition(_warningCursorLeft, _warningCursorTop);
-                _consoleTextRemover.RemoveUntilSavedCursorPosition();
-                _isTextWritten = false;
-            }
+            PrintLine(finalMidText, Blue);
+            PrintLine();
         }
 
         private static class ConsoleColors
         {
-            private static ConsoleColor _preBackground, _preForeground;
-            private static bool _isSet;
+            private static readonly ConsoleColor 
+                PreBackground = Console.BackgroundColor,
+                PreForeground = Console.ForegroundColor;
+            private static Stack<Tuple<ConsoleColor, ConsoleColor>> _storedColors = new();
 
-            public static void SetColors(ConsoleColor foreground) {
-                SetColors(foreground, Console.BackgroundColor);
+            public static void SetAndPushColors(ConsoleColor foreground) {
+                SetAndPushColors(foreground, Console.BackgroundColor);
             }
             
-            public static void SetColors(ConsoleColor foreground, ConsoleColor background) {
-                if (!_isSet) {
-                    _preBackground = Console.BackgroundColor;
-                    _preForeground = Console.ForegroundColor;
-                }
-
-                Console.BackgroundColor = background;
+            public static void SetAndPushColors(ConsoleColor foreground, ConsoleColor background) {
+                _storedColors.Push(Tuple.Create(Console.ForegroundColor, Console.BackgroundColor));
                 Console.ForegroundColor = foreground;
-                _isSet = true;
+                Console.BackgroundColor = background;
             }
 
-            public static void ResetColors() {
-                if (!_isSet) {
-                    throw new InvalidOperationException("no colors were set before");
-                }
+            public static void SetAndPushDefaultColors() {
+                SetAndPushColors(PreForeground, PreBackground);
+            }
 
-                Console.BackgroundColor = _preBackground;
-                Console.ForegroundColor = _preForeground;
-                _isSet = false;
+            public static void SetPreviousAndPopColors(ushort times = 1) {
+                while (times-- > 0) {
+                    if (_storedColors.Count > 0) {
+                        var (fore, back) = _storedColors.Pop();
+                        Console.ForegroundColor = fore;
+                        Console.BackgroundColor = back;
+                    }
+                    else {
+                        Console.ForegroundColor = PreForeground;
+                        Console.BackgroundColor = PreBackground;
+                        break;
+                    }
+                }
             }
         }
 
@@ -342,24 +262,33 @@ namespace UBB_NASM_Runner
                 text = text.Substring(i);
             }
 
-            ConsoleColors.SetColors(foreground, background);
+            ConsoleColors.SetAndPushColors(foreground, background);
             Console.Write(text);
-            ConsoleColors.ResetColors();
+            ConsoleColors.SetPreviousAndPopColors();
         }
 
         public static void PrintWarning(string text) {
-            Print(text, Darkyellow, true);
+            Print($"    {text}", Darkyellow, true);
         }
 
         public static void PrintError(Exception exception) {
-            Print($"{Nl}{exception.GetType()} : {exception.Message}", Darkred, true);
+            var text = $"{Nl}{exception.GetType()} : {exception.Message}";
+            Print(text, Darkred, true);
+            OutputList.AddWithMaxCapacityToList(Tuple.Create(
+                OutputList.OutputTypes.Error,
+                text
+                ));
+        }
+        
+        public static void PrintError(string text) {
+            Print(text, Darkred, true);
         }
 
         public static void PrintSpecialPlainText(string text) {
             Print(text, Black, Gray, true);
         }
 
-        public static void PrintPlainText(string text = "") {
+        public static void PrintWhiteText(string text = "") {
             Print(text, White, true);
         }
         
@@ -372,17 +301,36 @@ namespace UBB_NASM_Runner
             foreach (var item in listItems) {
                 var spacing = i.ToString().Length < 3 ? "   ".Substring(0, 3 - i.ToString().Length + 1) : " ";
 
-                ConsoleColors.SetColors(Green);
+                ConsoleColors.SetAndPushColors(Green);
                 Console.Write($" {i++}.{spacing}");
-                ConsoleColors.SetColors(Magenta);
+                ConsoleColors.SetPreviousAndPopColors();
+                ConsoleColors.SetAndPushColors(Magenta);
                 Console.WriteLine(item);
+                ConsoleColors.SetPreviousAndPopColors();
             }
-
-            ConsoleColors.ResetColors();
         }
 
         public static void PrintInputText(string text = "input") {
             Print($"{text} : ", Cyan);
+        }
+
+        public static void PrintLine(string text = "") {
+            if (text.Equals(string.Empty)) {
+                ConsoleColors.SetAndPushDefaultColors();
+                Print(text, true);
+                ConsoleColors.SetPreviousAndPopColors();
+            }
+            else {
+                Print(text, Console.ForegroundColor, Console.BackgroundColor, true);
+            }
+        }
+        
+        public static void PrintLine(string text, ConsoleColor foreground) {
+            Print(text, foreground, Console.BackgroundColor, true);
+        }
+        
+        public static void PrintLine(string text, ConsoleColor foreground, ConsoleColor background) {
+            Print(text, foreground, background, true);
         }
     }
 }
