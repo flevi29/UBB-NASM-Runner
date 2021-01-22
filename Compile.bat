@@ -1,10 +1,6 @@
 @echo off
-dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained false -c Release
+dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained false -c Release -o "%~dp0\binary"
 echo:
-xcopy /F /Y "%~dp0\UBB-NASM-Runner\bin\Release\netcoreapp3.1\win-x64\publish\UBB-NASM-Runner.exe" "%~dp0\UBB-NASM-Runner.exe"
-echo:
-dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained true -c Release
-echo:
-xcopy /F /Y "%~dp0\UBB-NASM-Runner\bin\Release\netcoreapp3.1\win-x64\publish\UBB-NASM-Runner.exe" "%~dp0\UBB-NASM-Runner-standalone.exe"
+dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained true -c Release -o "%~dp0\binary-standalone"
 echo:
 pause

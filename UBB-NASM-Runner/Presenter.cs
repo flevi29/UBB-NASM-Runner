@@ -4,76 +4,76 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace UBB_NASM_Runner
 {
     internal static class Presenter
     {
 
-        public static void Start() {
+        public static async Task Start() {
             View.SetTitle("NASM");
-            var counter = 1;
+            uint counter = 1;
+            var filePath = string.Empty;
 
             CleanUpDirectory();
 
-            var filePath = ChooseFile();
-            if (!filePath.Equals(string.Empty)) {
-                View.SetTitle(Path.GetFileName(filePath));
-            }
-            View.PrintNewInstanceDecoration(counter++, filePath);
-            CompileAndStartApp(filePath);
-
-            var consoleTextRemover = new View.ConsoleTextRemover();
+            var command = new ConsoleKeyInfo(
+                'f', ConsoleKey.F, false, false, false);
+            
             while (true) {
-                View.PrintPlainText();
-                consoleTextRemover.SaveCursorPosition();
-                View.PrintControls();
-                View.CursorVisibility(false);
-                var command = View.ReadKey();
-                while (!IsAllowedCommand(command, filePath)) {
-                    command = View.ReadKey();
-                }
-
-                View.CursorVisibility(true);
-                View.ScrollDown();
-
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
                 if (command.Key.Equals(ConsoleKey.F)) {
                     //Select which file to compile
                     var oldFilePath = filePath;
-                    consoleTextRemover.RemoveUntilSavedCursorPosition();
                     filePath = ChooseFile();
+                    
                     if (!filePath.Equals(string.Empty)) {
                         View.SetTitle(Path.GetFileNameWithoutExtension(filePath));
                         if (!oldFilePath.Equals(filePath)) {
                             counter = 1;
                         }
                     }
-                    else {
-                        View.ClearScreen();
-                    }
-                    
                 }
                 else if (command.Key.Equals(ConsoleKey.T)) {
-                    consoleTextRemover.RemoveUntilSavedCursorPosition();
-                    View.PrintNewInstanceDecoration(counter, filePath, true);
                     var changeLab = (command.Modifiers & ConsoleModifiers.Control) != 0;
-                    AcTest(filePath, changeLab);
-
-                    continue;
+                    await AcTest(filePath, changeLab);
+                    goto InputPart;
                 }
                 else if (command.Key.Equals(ConsoleKey.Q)) {
-                    break;
+                    View.PrintLine();
+                    goto EndOfWhile;
                 }
 
-                consoleTextRemover.RemoveUntilSavedCursorPosition();
-                View.PrintNewInstanceDecoration(counter++, filePath);
+                PrintDecoration(counter++, filePath);
 
-                CompileAndStartApp(filePath);
+                await CompileAndStartApp(filePath);
+                InputPart:
+                PrintControlsAndReadAllowedKey(filePath, out command);
             }
+            EndOfWhile: ;
+        }
+        
+        private static void PrintControlsAndReadAllowedKey(string filePath, out ConsoleKeyInfo command) {
+            View.PrintLine();
+            View.PrintControls();
+            View.CursorVisibility(false);
+            do {
+                command = View.ReadKey();
+            } while (!IsAllowedCommand(command, filePath)) ;
+
+            View.CursorVisibility(true);
         }
 
-        private static string GetFullFilePathWithObjExtension(string fPath) {
+        private static void PrintDecoration() {
+            View.PrintAcTestDecoration();
+        }
+        
+        private static void PrintDecoration(uint counter, string filePath) {
+            View.PrintNewInstanceDecoration(counter, filePath);
+        }
+
+        private static string GetFileBinPathWithObjExtension(string fPath) {
             return Path.Combine(Model.BinPath, GetFileNameWithObjExtension(fPath));
         }
 
@@ -189,34 +189,40 @@ namespace UBB_NASM_Runner
             return filename.Equals("")
                 ? command.Key.Equals(ConsoleKey.Q) || command.Key.Equals(ConsoleKey.F)
                 : command.Key.Equals(ConsoleKey.Enter) || command.Key.Equals(ConsoleKey.Q)
-                                                       || command.Key.Equals(ConsoleKey.F)
-                                                       || command.Key.Equals(ConsoleKey.T);
+                                                 || command.Key.Equals(ConsoleKey.F)
+                                                 || command.Key.Equals(ConsoleKey.T);
         }
 
-        private static void ChangeCurrentLabString(string fileName, string labCommand) {
+        private static void ChangeCurrentOrAppendLabString(string fileName, string labCommand) {
             if (!File.Exists(Model.LabFilePath)) return;
             var fileLines = File.ReadLines(Model.LabFilePath).ToList();
             var index = 0;
-            while (!Regex.IsMatch(fileLines[index], $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$")) {
+            while (index < fileLines.Count && !Regex.IsMatch(fileLines[index], 
+                $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$")) {
                 index++;
             }
 
-            fileLines[index] = $"{labCommand} {fileName}";
+            var lineToAdd = $"{labCommand} {fileName}";
+            if (index.Equals(fileLines.Count)) {
+                fileLines.Add(lineToAdd);
+            }
+            else {
+                fileLines[index] = lineToAdd;
+            }
 
             File.WriteAllLines(Model.LabFilePath, fileLines);
         }
 
         private static string GetRequiredLabString(string fileName) {
             if (!File.Exists(Model.LabFilePath)) return string.Empty;
-            var fileLines = File.ReadLines(Model.LabFilePath)
-                .Where(line =>
-                    Regex.IsMatch(line, $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$"))
-                .Select(line => new {Line = line}).ToList();
-            return fileLines.Count.Equals(0) 
-                ? string.Empty 
-                : fileLines.First().Line.Split(' ').First();
+            var fileLine = File
+                .ReadLines(Model.LabFilePath)
+                .FirstOrDefault(line => 
+                    Regex.IsMatch(line, $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$"));
+            
+            return fileLine?.Split(' ').First();
         }
-
+        
         private static void PrintAvailableLabs() {
             var process = new Process {
                 StartInfo = new ProcessStartInfo {
@@ -234,46 +240,57 @@ namespace UBB_NASM_Runner
             while (!process.StandardOutput.EndOfStream) {
                 var line = process.StandardOutput.ReadLine();
                 if (line == null || !line.ToLower().Contains("labs:")) continue;
-                View.PrintPlainText(line);
+                View.PrintWhiteText(line);
                 break;
             }
         }
 
-        private static void AcTest(string filePath, bool changeLab) {
+        private static async Task AcTest(string filePath, bool changeLab) {
+            PrintDecoration();
+            
             if (!File.Exists(Model.AcTestPath)) {
                 View.PrintWarning("Tester program not found");
                 return;
             }
+            
             var fileName = Path.GetFileName(filePath);
-            var labCommand = GetRequiredLabString(fileName);
-            var noRecordOfCurrentFile = labCommand.Equals(string.Empty);
-            if (changeLab || noRecordOfCurrentFile) {
-                var clearText = new View.ConsoleTextRemover();
-                clearText.SaveCursorPosition();
-                PrintAvailableLabs();
-                labCommand = View.ReadLabCommand($"{View.Nl}lab");
-                if (noRecordOfCurrentFile) {
-                    File.AppendAllText(Model.LabFilePath, $"{labCommand} {fileName}{View.Nl}");
-                }
-                else {
-                    ChangeCurrentLabString(fileName, labCommand);
-                }
-
-                clearText.RemoveUntilSavedCursorPosition();
+            string labCommand = null;
+            if (!changeLab) {
+                labCommand = GetRequiredLabString(fileName);
             }
 
-            if (CompileApp(filePath) != 0) return;
+            if (changeLab || labCommand == null) {
+                PrintAvailableLabs();
+                labCommand = View.ReadLabCommand($"{View.Nl}lab");
+                View.PrintLine();
+                View.PrintLine();
+            }
+
+            if (!(await CompileApp(filePath)).Equals(0)) 
+                return;
+            
             try {
-                labCommand =
-                    $"{labCommand} \\\"{Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath))}\\\"";
-                StartConsoleApp(Model.AcTestPath, labCommand, filePath);
+                var arguments =
+                    $"{labCommand} \"{Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath))}\"";
+                var exitCode = await AppRunner.StartConsoleApp(Model.AcTestPath, arguments);
+                
+                if (!exitCode.Equals(0)) {
+                    throw new Exception("Tester program failed");
+                }
+                
+                ChangeCurrentOrAppendLabString(fileName, labCommand);
+                
+                
+                
+                // TODO: check if killing stuck tester kills app that was being tested too
+                // if not, then check if it's alive and kill it via GetProcessByFileName()
             }
             catch (Exception e) {
                 View.PrintError(e);
             }
         }
 
-        private static void RunApp(string filePath) {
+        private static async Task RunApp(string filePath) {
             filePath = Path.GetFileNameWithoutExtension(filePath);
 
             //Run created executable
@@ -285,7 +302,9 @@ namespace UBB_NASM_Runner
 
                 if (filePath != "" &&
                     File.Exists(Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)))) {
-                    StartConsoleApp(Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)));
+                    await AppRunner.StartConsoleApp(
+                        Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)));
+                    
                 }
             }
             catch (Exception exception) {
@@ -296,25 +315,29 @@ namespace UBB_NASM_Runner
         private static string GetLibraryArguments(string filePath) {
             var included = "";
             SearchFileForIncludes(filePath, ref included);
-            var mainLibtypes = "";
-            var libtypes = "";
+            var mainLibTypes = "";
+            var libTypes = "";
 
             foreach (var word in included.Split(' ')) {
-                if (word.Equals("io.inc")) {
-                    mainLibtypes += "-lio ";
-                }
-                else if (word.Equals("mio.inc")) {
-                    mainLibtypes += "-lmio ";
-                }
-                else {
-                    if (word.Contains('.')) {
-                        libtypes += Path.GetFileNameWithoutExtension(word) + ".obj ";
+                switch (word) {
+                    case "io.inc":
+                        mainLibTypes += "-lio ";
+                        break;
+                    case "mio.inc":
+                        mainLibTypes += "-lmio ";
+                        break;
+                    default: {
+                        if (word.Contains('.')) {
+                            libTypes += Path.GetFileNameWithoutExtension(word) + ".obj ";
+                        }
+
+                        break;
                     }
                 }
             }
 
-            libtypes += mainLibtypes;
-            return !libtypes.Equals("") ? libtypes[..^1] : libtypes;
+            libTypes += mainLibTypes;
+            return !libTypes.Equals("") ? libTypes[..^1] : libTypes;
         }
 
         private static List<string> GetMissingImportantFiles() {
@@ -324,13 +347,10 @@ namespace UBB_NASM_Runner
                 .ToList();
         }
         
-        private static void CompileAndStartApp(string filePath) {
+        private static async Task CompileAndStartApp(string filePath) {
             if (filePath.Equals(string.Empty)) {
-                View.PrintWarning(
-                    $"There are no .asm files in \\projects. Nothing to compile and execute.{View.Nl}" +
-                    "This program should be executed first in a directory where you " +
-                    "have your projects and the bin files provided by the university, " +
-                    $"from where these will be moved to separate folders by the program.{View.Nl}{View.Nl}");
+                View.PrintWarning($"There are no .asm files in \\projects or in the root directory{View.Nl}");
+                View.PrintLine();
                 return;
             }
 
@@ -344,21 +364,21 @@ namespace UBB_NASM_Runner
                 return;
             }
 
-            if (CompileApp(filePath).Equals(0)) {
-                RunApp(filePath);
+            if ((await CompileApp(filePath)).Equals(0)) {
+                await RunApp(filePath);
             }
+            View.PrintLine();
         }
 
-        private static int CompileApp(string filePath) {
+        private static async Task<int> CompileApp(string filePath) {
             var filesToDelete = new List<string>();
             int exitCode;
-            var argumentLibtype = GetLibraryArguments(filePath);
+            var argumentLibType = GetLibraryArguments(filePath);
 
             Directory.SetCurrentDirectory(Model.BinPath);
-            if ((exitCode = AssembleApp(filePath, filesToDelete)) == 0) {
-                exitCode = LinkApp(filePath, argumentLibtype);
+            if ((exitCode = await AssembleApp(filePath, filesToDelete)) == 0) {
+                exitCode = await LinkApp(filePath, argumentLibType);
             }
-
             Directory.SetCurrentDirectory(Model.RootPath);
 
             if (exitCode == 0) {
@@ -381,12 +401,12 @@ namespace UBB_NASM_Runner
             return exitCode;
         }
 
-        private static int LinkApp(string filePath, string argumentLibtype) {
+        private static async Task<int> LinkApp(string filePath, string argumentLibType) {
             try {
-                // Run nlink, Nlink is such a piece of shit it doesnt escape spaces within quotation marks in arguments
-                // that way project files must be copied to its directory
-                return StartConsoleApp(Model.NLinkPath,
-                    $"{GetFileNameWithObjExtension(filePath)} {argumentLibtype} -o {GetFileNameWithExeExtension(filePath)}");
+                // Run Nlink, it doesnt escape spaces within quotation marks in arguments
+                return await AppRunner.StartConsoleApp(Model.NLinkPath,
+                    $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
+                    $"-o {GetFileNameWithExeExtension(filePath)}");
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -395,24 +415,13 @@ namespace UBB_NASM_Runner
             return -1;
         }
 
-        private static int AssembleApp(string filePath, ICollection<string> filesToDelete) {
+        private static async Task<int> AssembleApp(string filePath, ICollection<string> compiledObjects) {
             var exitCode = -1;
 
             try {
-                // Copy main file into bin
-                var fileBinPath = Path.Combine(Model.BinPath, Path.GetFileName(filePath));
-                if (!filesToDelete.Contains(fileBinPath)) {
-                    if (File.Exists(fileBinPath)) {
-                        File.Delete(fileBinPath);
-                    }
-
-                    File.Copy(filePath, fileBinPath);
-                    filesToDelete.Add(fileBinPath);
-                }
-
-                var incFiles = "";
-                SearchFileForIncludes(filePath, ref incFiles); // includes seperated by spaces
-                if (incFiles != "") {
+                var incFiles = string.Empty;
+                SearchFileForIncludes(filePath, ref incFiles);
+                if (!incFiles.Equals(string.Empty)) {
                     // compiles all include files
                     foreach (var incFile in incFiles.Split(' ')) {
                         if (incFile.Equals(string.Empty) || new[] {"mio.inc", "io.inc"}.Contains(incFile)) {
@@ -424,39 +433,30 @@ namespace UBB_NASM_Runner
                             throw new Exception($"{incFilePath} missing");
                         }
 
-                        // Copy include file(s) into bin
-                        var incFileBinPath = Path.Combine(Model.BinPath, incFile);
-                        if (!filesToDelete.Contains(incFileBinPath)) {
-                            if (File.Exists(incFileBinPath)) {
-                                File.Delete(incFileBinPath);
-                            }
-
-                            File.Copy(incFilePath, incFileBinPath);
-                            filesToDelete.Add(incFileBinPath);
-                        }
-
-                        var associatedAssemblyFile = GetFileWithSpecificCaseInsensitiveExtension(incFilePath, "asm");
-                        if (associatedAssemblyFile.Equals("")) {
+                        var associatedAssemblyFile = 
+                            GetFileWithSpecificCaseInsensitiveExtension(incFilePath, "asm");
+                        if (associatedAssemblyFile.Equals(string.Empty)) {
                             throw new Exception($"{incFile} associated assembly file missing");
                         }
 
-                        AssembleApp(associatedAssemblyFile, filesToDelete);
+                        await AssembleApp(associatedAssemblyFile, compiledObjects);
                     }
                 }
-
-                //Directory.SetCurrentDirectory(Model.BinPath);
+                
                 // Add new object file to the list for cleanup
-                var objfullpath = GetFullFilePathWithObjExtension(filePath);
-                if (!filesToDelete.Contains(objfullpath)) {
+                var objFullPath = GetFileBinPathWithObjExtension(filePath);
+                if (!compiledObjects.Contains(objFullPath)) {
                     // If build failed throw exception
-                    if ((exitCode = StartConsoleApp(Model.NasmPath, $"-f win32 \"{fileBinPath}\"")) != 0) {
+                    var args = $"-i{Model.ProjectsPath}\\ " +
+                               $"-f win32 " +
+                               $"-o \"{objFullPath}\" \"{filePath}\"";
+                    if ((exitCode = await AppRunner.StartConsoleApp(Model.NasmPath, args)) != 0) {
                         throw new Exception($"{Path.GetFileName(filePath)} build failed");
                     }
 
-                    filesToDelete.Add(GetFullFilePathWithObjExtension(filePath));
+                    compiledObjects.Add(objFullPath);
                 }
-
-                //Directory.SetCurrentDirectory(Model.RootPath);
+                
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -468,8 +468,13 @@ namespace UBB_NASM_Runner
         // returns empty string if there are no files found that can be compiled
         private static string ChooseFile() {
             var filePath = string.Empty;
+            var errorMsg = string.Empty;
 
             try {
+                ChooseFileStart:
+                
+                View.PrintNewInstanceDecoration();
+
                 var assemblyFileNames = new DirectoryInfo(Model.ProjectsPath)
                     .GetFiles()
                     .Where(path => path.Extension.ToLower().Equals(".asm") &&
@@ -478,26 +483,25 @@ namespace UBB_NASM_Runner
                     .Select(path => path.FullName)
                     .ToList();
 
-                var clearText = new View.ConsoleTextRemover();
-                clearText.SaveCursorPosition();
-
                 if (assemblyFileNames.Count.Equals(0)) return string.Empty;
 
-                View.PrintPlainText($"Type index of .asm file you want to compile and execute :{View.Nl}");
+                View.PrintWhiteText($"Type index of .asm file you want to compile and execute :{View.Nl}");
                 View.PrintOrderedListItem(assemblyFileNames.Select(Path.GetFileNameWithoutExtension).ToList());
+
                 View.PrintInputText($"{View.Nl}index");
-                var inputError = new View.InputError();
-                inputError.SavePosition();
-                var index = View.ReadIndexFromInput();
-                while (index < 1 || index > assemblyFileNames.Count) {
-                    inputError.PrintInputError("Invalid input");
-                    index = View.ReadIndexFromInput();
-                    inputError.RemoveUntilSavedPosition();
-                }
+                var index = View.ReadIndexFromInput((uint)assemblyFileNames.Count);
 
                 filePath = assemblyFileNames[index - 1];
+                
+                View.PrintLine();
 
-                clearText.RemoveUntilSavedCursorPosition();
+                if (!File.Exists(filePath)) {
+                    View.PrintLine();
+                    View.PrintError($"{filePath} has been moved/renamed");
+                    goto ChooseFileStart;
+                }
+                
+                View.PrintLine();
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -506,106 +510,14 @@ namespace UBB_NASM_Runner
             return filePath;
         }
 
-        private static Process GetProcessByFileName(string filename) {
-            if (filename.Equals(string.Empty)) return null;
-
-            var processes =
-                Process.GetProcessesByName(Path.GetFileNameWithoutExtension(filename))
-                    .OrderByDescending(p => p.StartTime).ToList();
-
-            return !processes.Any() ? null : processes.First();
-        }
-
-        private static void PrintImportantPartOfOutput(string outputFile) {
-            var lines = File.ReadLines(outputFile).ToList();
-            const string str = "**********************";
-            var row1 = 1;
-            while (!lines[row1].Contains(str)) {
-                row1++;
-            }
-
-            row1 += 2;
-            var row2 = lines.Count - 2;
-            while (!lines[row2].Contains(str)) {
-                row2--;
-            }
-
-            var wait = 1;
-            while (row1 != row2) {
-                View.PrintPlainOutputText(lines[row1++]);
-                // Printing it out all fast for some reason messes with Windows Terminal, and will not display
-                // most lines that it scrolled past by, slowing it down seemingly resolves this problem
-                if (wait++ % (Console.WindowHeight - 2) == 0) {
-                    Thread.Sleep(1);
-                }
-            }
-        }
-
-        private static int StartConsoleApp(string filename, string arguments = "", string testFile = "") {
-            var process = new Process();
-            var outputFile = Path.Combine(Model.BinPath, $"{DateTime.Now.ToFileTimeUtc()}.txt");
-            while (File.Exists(outputFile)) {
-                outputFile = Path.Combine(Model.BinPath, $"{DateTime.Now.ToFileTimeUtc()}.txt");
-            }
-
-            var isAcTest = filename.Equals(Model.AcTestPath);
-            var printToSeparateConsole = !(isAcTest && arguments.Equals(string.Empty) ||
-                                           new[] {Model.NLinkPath, Model.NasmPath}.Contains(filename));
-
-            try {
-                if (!printToSeparateConsole) {
-                    process.StartInfo.FileName = filename;
-                    process.StartInfo.Arguments = arguments;
-                    process.StartInfo.UseShellExecute = false;
-                    process.Start();
-                    process.WaitForExit();
-                }
-                else {
-                    arguments = "-Command if ($?) {" +
-                                $"Start-Transcript -Path \\\"{outputFile}\\\"; " +
-                                "cls; " +
-                                $".\\{Path.GetFileName(filename)} {arguments}; " +
-                                "Stop-Transcript; }";
-                    process = Process.Start(
-                        new ProcessStartInfo(Model.PowerShellPath, arguments) {
-                            UseShellExecute = true,
-                            WorkingDirectory = isAcTest ? Model.BinPath : Model.CompiledPath
-                        }
-                    );
-
-                    process?.WaitForExit();
-
-                    if (process != null && process.ExitCode.Equals(0)) {
-                        PrintImportantPartOfOutput(outputFile);
-                    }
-                    else {
-                        View.PrintWarning("\tProgram was forcibly closed or crashed");
-                    }
-
-                    if (File.Exists(outputFile)) {
-                        File.Delete(outputFile);
-                    }
-
-                    if (isAcTest) {
-                        GetProcessByFileName(testFile)?.Kill();
-                    }
-                }
-            }
-            catch (Exception exception) {
-                View.PrintError(exception);
-            }
-
-            return process?.ExitCode ?? -1;
-        }
-
         private static void SearchFileForIncludes(string filePath, ref string includeFiles) {
             try {
                 var asmFile = File.ReadLines(filePath)
                     .Where(line => line.Contains("%include"))
                     .Select(line => new {Line = line});
 
-                foreach (var asml in asmFile) {
-                    foreach (var fragment in asml.Line.Split(' ')) {
+                foreach (var asmLine in asmFile) {
+                    foreach (var fragment in asmLine.Line.Split(' ')) {
                         if (fragment.Equals("")) continue;
                         var toInc = fragment;
                         if (Equals(fragment[0], fragment[^1]) && Equals(fragment[0], '\'')) {

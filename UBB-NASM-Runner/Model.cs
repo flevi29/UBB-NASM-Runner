@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace UBB_NASM_Runner
 {
@@ -12,10 +11,8 @@ namespace UBB_NASM_Runner
             NasmPath = Path.Combine(BinPath, "nasm.exe"),
             NLinkPath = Path.Combine(BinPath, "nlink.exe"),
             LabFilePath = Path.Combine(BinPath, "labs.txt"),
-            AcTestPath = Path.Combine(BinPath, "actest.exe"),
-            PowerShellPath = Environment.ExpandEnvironmentVariables(
-                "%SystemRoot%\\system32\\WindowsPowerShell\\v1.0\\powershell.exe");
-        
+            AcTestPath = Path.Combine(BinPath, "actest.exe");
+
         public static readonly string[] ImportantFiles = {
             "actest.exe", "io.inc", "io.lib", "Kernel32.Lib",
             "ld.exe", "mio.inc", "mio.lib", "nasm.exe", "nlink.exe", "start.obj"
