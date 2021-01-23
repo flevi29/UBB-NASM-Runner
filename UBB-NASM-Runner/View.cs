@@ -30,15 +30,25 @@ namespace UBB_NASM_Runner
 
             $"If you must cross a course cross cow across a crowded cow crossing,{Nl}" +
             "cross the cross coarse cow across the crowded cow crossing carefully.",
-            
+
             "Which witch switched the Swiss wristwatches?",
-            
+
             $"To begin to toboggan first buy a toboggan, but don't buy too big a toboggan.{Nl}" +
             "Too big a toboggan is too big a toboggan to buy to begin to toboggan."
         };
 
         public static string GetRandomErrorMessage() {
             return ErrorMessages[new Random().Next(ErrorMessages.Length)];
+        }
+
+        // For future if emoji use is planned
+        // Console.OutputEncoding = System.Text.Encoding.UTF8; will be required
+        public static bool ConsoleSupportsUnicode() {
+            var cursorLeft = Console.CursorLeft;
+            Console.Write("✅");
+            var leftAdvance = Console.CursorLeft - cursorLeft;
+            Console.Write(string.Concat(Enumerable.Repeat("\b \b", leftAdvance)));
+            return leftAdvance != 1;
         }
 
         public static void SetTitle(string title) {
@@ -54,7 +64,7 @@ namespace UBB_NASM_Runner
         public static void ClearScreen() {
             Console.Clear();
             Console.WriteLine("\x1b[3J");
-            Console.SetCursorPosition(0,0);
+            Console.SetCursorPosition(0, 0);
         }
 
         public static void CursorVisibility(bool isVisible) {
@@ -66,11 +76,11 @@ namespace UBB_NASM_Runner
         private static void SetCursorLeftmost() {
             Console.SetCursorPosition(0, Console.CursorTop);
         }
-        
+
         public static void MoveCursorUp(uint amount = 1) {
-            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - (int)amount);
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - (int) amount);
         }
-        
+
         public static void ScrollDown() {
             CursorVisibility(false);
             Console.Write(string.Concat(Enumerable.Repeat(Nl, Console.WindowHeight - 2)));
@@ -80,9 +90,9 @@ namespace UBB_NASM_Runner
 
         public static int ReadIndexFromInput(uint maxVal = 0) {
             while (true) {
-                if (!int.TryParse(ReadFromInput(true, out var inpLen), out var index)) 
+                if (!int.TryParse(ReadFromInput(true, out var inpLen), out var index))
                     return -1;
-                
+
                 if (maxVal.Equals(0) || index > 0 && index <= maxVal) {
                     return index;
                 }
@@ -94,7 +104,7 @@ namespace UBB_NASM_Runner
         public static string ReadFromInput() {
             return ReadFromInput(false, out _);
         }
-        
+
         private static string ReadFromInput(bool isNumber, out uint inpLen) {
             ConsoleColors.SetAndPushDefaultColors();
             var input = "";
@@ -115,6 +125,7 @@ namespace UBB_NASM_Runner
                             if (isNumber && (ch < '0' || ch > '9')) {
                                 continue;
                             }
+
                             Console.Write(ch);
                             input += ch;
                             inpLen++;
@@ -124,16 +135,16 @@ namespace UBB_NASM_Runner
                     }
                 }
             }
-            
+
             ConsoleColors.SetPreviousAndPopColors();
             return input;
         }
-        
+
         public static string ReadLabCommand(string inputText) {
             PrintInputText(inputText);
             var labCommand = ReadFromInput();
-            return Regex.IsMatch(labCommand ?? string.Empty, @"^\s*$") 
-                ? string.Empty 
+            return Regex.IsMatch(labCommand ?? string.Empty, @"^\s*$")
+                ? string.Empty
                 : labCommand;
         }
 
@@ -144,25 +155,26 @@ namespace UBB_NASM_Runner
                 "RETURN", "compile&execute",
                 "Q", "exit",
                 "F", "choose file",
-                "Ctr-T/T", "ACtest"
+                "T/Ctr-T", "ACtest"
             };
 
             _lengthOfControls = 0;
 
             for (var i = 0; i < newInstanceString.Length; i++) {
-                _lengthOfControls += (uint)newInstanceString[i].Length;
+                _lengthOfControls += (uint) newInstanceString[i].Length;
                 ConsoleColors.SetAndPushColors(Green);
                 Console.Write(newInstanceString[i++]);
                 ConsoleColors.SetPreviousAndPopColors();
                 ConsoleColors.SetAndPushColors(Yellow);
                 Console.Write(line);
                 ConsoleColors.SetPreviousAndPopColors();
-                _lengthOfControls += (uint)newInstanceString[i].Length;
+                _lengthOfControls += (uint) newInstanceString[i].Length;
                 ConsoleColors.SetAndPushColors(Cyan);
                 Console.Write(newInstanceString[i]);
                 if (!i.Equals(newInstanceString.Length - 1)) {
                     Console.Write(tab);
                 }
+
                 ConsoleColors.SetPreviousAndPopColors();
             }
 
@@ -173,12 +185,13 @@ namespace UBB_NASM_Runner
         public static void PrintAcTestDecoration() {
             PrintNewInstanceDecoration(0, "ACTest");
         }
-        
+
         public static void PrintNewInstanceDecoration(uint counter = 0, string middleText = "") {
             middleText = System.IO.Path.GetFileNameWithoutExtension(middleText);
             if (middleText.Length > 15) {
                 middleText = middleText.Substring(0, 13) + "..";
             }
+
             string finalMidText;
 
             if (!middleText.Equals(string.Empty)) {
@@ -202,15 +215,15 @@ namespace UBB_NASM_Runner
 
             var diff = _lengthOfControls - finalMidText.Length;
             if (diff > 0) {
-                finalMidText += new string(' ', (int)diff);
+                finalMidText += new string(' ', (int) diff);
             }
-            
+
             SetCursorLeftmost();
             var upTimes = (uint) (_lengthOfControls / Console.WindowWidth);
             if (upTimes > 0) {
                 MoveCursorUp(upTimes);
             }
-            
+
             PrintLine(finalMidText, Blue);
             ScrollDown();
             PrintLine();
@@ -218,15 +231,16 @@ namespace UBB_NASM_Runner
 
         private static class ConsoleColors
         {
-            private static readonly ConsoleColor 
+            private static readonly ConsoleColor
                 PreBackground = Console.BackgroundColor,
                 PreForeground = Console.ForegroundColor;
+
             private static Stack<Tuple<ConsoleColor, ConsoleColor>> _storedColors = new();
 
             public static void SetAndPushColors(ConsoleColor foreground) {
                 SetAndPushColors(foreground, Console.BackgroundColor);
             }
-            
+
             public static void SetAndPushColors(ConsoleColor foreground, ConsoleColor background) {
                 _storedColors.Push(Tuple.Create(Console.ForegroundColor, Console.BackgroundColor));
                 Console.ForegroundColor = foreground;
@@ -259,7 +273,7 @@ namespace UBB_NASM_Runner
         ) {
             Print(text, Console.ForegroundColor, Console.BackgroundColor, printNewLine);
         }
-        
+
         private static void Print(
             string text,
             ConsoleColor foreground,
@@ -277,6 +291,7 @@ namespace UBB_NASM_Runner
             if (printNewLine) {
                 text += Nl;
             }
+
             var i = 0;
             var preString = "";
             while (i < text.Length && new[] {'\t', '\r', '\n', ' '}.Contains(text[i])) {
@@ -302,11 +317,12 @@ namespace UBB_NASM_Runner
             if (!(exception.InnerException is null)) {
                 text = $"{text}{exception.GetType()} : ";
             }
+
             text = $"{text}{exception.Message}";
             PrintLine(text, DarkYellow);
             PrintLine();
         }
-        
+
         public static void PrintError(string text) {
             PrintLine(text, DarkYellow);
             PrintLine();
@@ -319,7 +335,7 @@ namespace UBB_NASM_Runner
         public static void PrintWhiteText(string text = "") {
             Print(text, White, true);
         }
-        
+
         public static void PrintPlainOutputText(string text = "") {
             Print(text, Gray, true);
         }
@@ -352,11 +368,11 @@ namespace UBB_NASM_Runner
                 Print(text, Console.ForegroundColor, Console.BackgroundColor, true);
             }
         }
-        
+
         public static void PrintLine(string text, ConsoleColor foreground) {
             Print(text, foreground, Console.BackgroundColor, true);
         }
-        
+
         public static void PrintLine(string text, ConsoleColor foreground, ConsoleColor background) {
             Print(text, foreground, background, true);
         }

@@ -10,7 +10,6 @@ namespace UBB_NASM_Runner
 {
     internal static class Presenter
     {
-
         public static async Task Start() {
             View.SetTitle("NASM");
             uint counter = 1;
@@ -20,14 +19,14 @@ namespace UBB_NASM_Runner
 
             var command = new ConsoleKeyInfo(
                 'f', ConsoleKey.F, false, false, false);
-            
+
             while (true) {
                 // ReSharper disable once ConvertIfStatementToSwitchStatement
                 if (command.Key.Equals(ConsoleKey.F)) {
                     //Select which file to compile
                     var oldFilePath = filePath;
                     filePath = ChooseFile();
-                    
+
                     if (!filePath.Equals(string.Empty)) {
                         View.SetTitle(Path.GetFileNameWithoutExtension(filePath));
                         if (!oldFilePath.Equals(filePath)) {
@@ -51,16 +50,17 @@ namespace UBB_NASM_Runner
                 InputPart:
                 PrintControlsAndReadAllowedKey(filePath, out command);
             }
+
             EndOfWhile: ;
         }
-        
+
         private static void PrintControlsAndReadAllowedKey(string filePath, out ConsoleKeyInfo command) {
             View.PrintLine();
             View.PrintControls();
             View.CursorVisibility(false);
             do {
                 command = View.ReadKey();
-            } while (!IsAllowedCommand(command, filePath)) ;
+            } while (!IsAllowedCommand(command, filePath));
 
             View.CursorVisibility(true);
         }
@@ -68,7 +68,7 @@ namespace UBB_NASM_Runner
         private static void PrintDecoration() {
             View.PrintAcTestDecoration();
         }
-        
+
         private static void PrintDecoration(uint counter, string filePath) {
             View.PrintNewInstanceDecoration(counter, filePath);
         }
@@ -136,6 +136,20 @@ namespace UBB_NASM_Runner
             return filePath;
         }
 
+        private static void CreateHush() {
+            View.PrintWhiteText("Should your project files be moved to \\projects for " +
+                                $"a cleaner directory?");
+            View.PrintWarning("If you change your mind make sure you delete " +
+                              $"\\bin\\hushprojects{View.Nl}");
+            View.PrintInputText("answer(Y/n)");
+            var answer = View.ReadFromInput().ToLower();
+            View.PrintLine(View.Nl);
+            var value = new[] {"yes", "ye", "y"}.Contains(answer)
+                ? new byte[] {0b1}
+                : new byte[] {0b0};
+            File.WriteAllBytes(Model.HushPath, value);
+        }
+
         private static void CleanUpDirectory() {
             try {
                 var filePaths = GetAllFilePathsWithinDir(Model.RootPath);
@@ -144,8 +158,14 @@ namespace UBB_NASM_Runner
                     Directory.CreateDirectory(Model.BinPath);
                 }
 
-                if (!Directory.Exists(Model.ProjectsPath)) {
-                    Directory.CreateDirectory(Model.ProjectsPath);
+                if (!File.Exists(Model.HushPath)) {
+                    CreateHush();
+                }
+
+                Model.SetProjectsPathAccordingToHush();
+
+                if (!Directory.Exists(Model.GetProjectsPath())) {
+                    Directory.CreateDirectory(Model.GetProjectsPath());
                 }
 
                 if (!Directory.Exists(Model.CompiledPath)) {
@@ -171,11 +191,11 @@ namespace UBB_NASM_Runner
                         if (File.Exists(destPath)) continue;
                         File.Move(filePath, destPath);
                     }
-                    else if (projectExtensions.Contains(filePathExt) && !Model.ProjectsPath.Equals(fPathDir)
+                    else if (projectExtensions.Contains(filePathExt) && !Model.GetProjectsPath().Equals(fPathDir)
                                                                      && !Model.BinPath.Equals(fPathDir)) {
-                        // .asm and .inc will be placed in \projects
+                        // .asm and .inc files will be placed in \projects or \
                         var destPath =
-                            IndexNameIfDuplicate(Path.Combine(Model.ProjectsPath, Path.GetFileName(filePath)));
+                            IndexNameIfDuplicate(Path.Combine(Model.GetProjectsPath(), Path.GetFileName(filePath)));
                         File.Move(filePath, destPath);
                     }
                 }
@@ -189,15 +209,18 @@ namespace UBB_NASM_Runner
             return filename.Equals("")
                 ? command.Key.Equals(ConsoleKey.Q) || command.Key.Equals(ConsoleKey.F)
                 : command.Key.Equals(ConsoleKey.Enter) || command.Key.Equals(ConsoleKey.Q)
-                                                 || command.Key.Equals(ConsoleKey.F)
-                                                 || command.Key.Equals(ConsoleKey.T);
+                                                       || command.Key.Equals(ConsoleKey.F)
+                                                       || command.Key.Equals(ConsoleKey.T);
         }
 
         private static void ChangeCurrentOrAppendLabString(string fileName, string labCommand) {
-            if (!File.Exists(Model.LabFilePath)) return;
+            if (!File.Exists(Model.LabFilePath)) {
+                File.Create(Model.LabFilePath).Close();
+            }
+
             var fileLines = File.ReadLines(Model.LabFilePath).ToList();
             var index = 0;
-            while (index < fileLines.Count && !Regex.IsMatch(fileLines[index], 
+            while (index < fileLines.Count && !Regex.IsMatch(fileLines[index],
                 $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$")) {
                 index++;
             }
@@ -214,15 +237,15 @@ namespace UBB_NASM_Runner
         }
 
         private static string GetRequiredLabString(string fileName) {
-            if (!File.Exists(Model.LabFilePath)) return string.Empty;
+            if (!File.Exists(Model.LabFilePath)) return null;
             var fileLine = File
                 .ReadLines(Model.LabFilePath)
-                .FirstOrDefault(line => 
+                .FirstOrDefault(line =>
                     Regex.IsMatch(line, $@"^[\S]+ {Regex.Escape(fileName)}[\s]*$"));
-            
+
             return fileLine?.Split(' ').First();
         }
-        
+
         private static void PrintAvailableLabs() {
             var process = new Process {
                 StartInfo = new ProcessStartInfo {
@@ -247,12 +270,12 @@ namespace UBB_NASM_Runner
 
         private static async Task AcTest(string filePath, bool changeLab) {
             PrintDecoration();
-            
+
             if (!File.Exists(Model.AcTestPath)) {
                 View.PrintWarning("Tester program not found");
                 return;
             }
-            
+
             var fileName = Path.GetFileName(filePath);
             string labCommand = null;
             if (!changeLab) {
@@ -266,24 +289,19 @@ namespace UBB_NASM_Runner
                 View.PrintLine();
             }
 
-            if (!(await CompileApp(filePath)).Equals(0)) 
+            if (!(await CompileApp(filePath)).Equals(0))
                 return;
-            
+
             try {
                 var arguments =
                     $"{labCommand} \"{Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath))}\"";
                 var exitCode = await AppRunner.StartConsoleApp(Model.AcTestPath, arguments);
-                
-                if (!exitCode.Equals(0)) {
+
+                if (!new[] {0, 15}.Contains(exitCode)) {
                     throw new Exception("Tester program failed");
                 }
-                
+
                 ChangeCurrentOrAppendLabString(fileName, labCommand);
-                
-                
-                
-                // TODO: check if killing stuck tester kills app that was being tested too
-                // if not, then check if it's alive and kill it via GetProcessByFileName()
             }
             catch (Exception e) {
                 View.PrintError(e);
@@ -304,7 +322,6 @@ namespace UBB_NASM_Runner
                     File.Exists(Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)))) {
                     await AppRunner.StartConsoleApp(
                         Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)));
-                    
                 }
             }
             catch (Exception exception) {
@@ -346,7 +363,7 @@ namespace UBB_NASM_Runner
                 .Where(filePath => !File.Exists(filePath) && !filePath.Equals(Model.AcTestPath))
                 .ToList();
         }
-        
+
         private static async Task CompileAndStartApp(string filePath) {
             if (filePath.Equals(string.Empty)) {
                 View.PrintWarning($"There are no .asm files in \\projects or in the root directory{View.Nl}");
@@ -359,7 +376,7 @@ namespace UBB_NASM_Runner
                 var warning = $"The following files are missing : {View.Nl}";
                 warning = missingFiles.Aggregate(
                     warning, (current, missingFile) => current + $"\t{missingFile}{View.Nl}"
-                    );
+                );
                 View.PrintWarning(warning);
                 return;
             }
@@ -367,6 +384,7 @@ namespace UBB_NASM_Runner
             if ((await CompileApp(filePath)).Equals(0)) {
                 await RunApp(filePath);
             }
+
             View.PrintLine();
         }
 
@@ -376,12 +394,13 @@ namespace UBB_NASM_Runner
             var argumentLibType = GetLibraryArguments(filePath);
 
             Directory.SetCurrentDirectory(Model.BinPath);
-            if ((exitCode = await AssembleApp(filePath, filesToDelete)) == 0) {
+            if ((exitCode = await AssembleApp(filePath, filesToDelete)).Equals(0)) {
                 exitCode = await LinkApp(filePath, argumentLibType);
             }
+
             Directory.SetCurrentDirectory(Model.RootPath);
 
-            if (exitCode == 0) {
+            if (exitCode.Equals(0)) {
                 string exeBinPath = Path.Combine(Model.BinPath, GetFileNameWithExeExtension(filePath)),
                     exeCompiledPath = Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath));
                 if (File.Exists(exeBinPath)) {
@@ -433,7 +452,7 @@ namespace UBB_NASM_Runner
                             throw new Exception($"{incFilePath} missing");
                         }
 
-                        var associatedAssemblyFile = 
+                        var associatedAssemblyFile =
                             GetFileWithSpecificCaseInsensitiveExtension(incFilePath, "asm");
                         if (associatedAssemblyFile.Equals(string.Empty)) {
                             throw new Exception($"{incFile} associated assembly file missing");
@@ -442,12 +461,12 @@ namespace UBB_NASM_Runner
                         await AssembleApp(associatedAssemblyFile, compiledObjects);
                     }
                 }
-                
+
                 // Add new object file to the list for cleanup
                 var objFullPath = GetFileBinPathWithObjExtension(filePath);
                 if (!compiledObjects.Contains(objFullPath)) {
                     // If build failed throw exception
-                    var args = $"-i{Model.ProjectsPath}\\ " +
+                    var args = $"-i{Model.GetProjectsPath()}\\ " +
                                $"-f win32 " +
                                $"-o \"{objFullPath}\" \"{filePath}\"";
                     if ((exitCode = await AppRunner.StartConsoleApp(Model.NasmPath, args)) != 0) {
@@ -456,7 +475,6 @@ namespace UBB_NASM_Runner
 
                     compiledObjects.Add(objFullPath);
                 }
-                
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -465,17 +483,15 @@ namespace UBB_NASM_Runner
             return exitCode;
         }
 
-        // returns empty string if there are no files found that can be compiled
         private static string ChooseFile() {
             var filePath = string.Empty;
-            var errorMsg = string.Empty;
 
             try {
                 ChooseFileStart:
-                
+
                 View.PrintNewInstanceDecoration();
 
-                var assemblyFileNames = new DirectoryInfo(Model.ProjectsPath)
+                var assemblyFileNames = new DirectoryInfo(Model.GetProjectsPath())
                     .GetFiles()
                     .Where(path => path.Extension.ToLower().Equals(".asm") &&
                                    !IsIncludeAssemblyFile(path.FullName))
@@ -489,10 +505,10 @@ namespace UBB_NASM_Runner
                 View.PrintOrderedListItem(assemblyFileNames.Select(Path.GetFileNameWithoutExtension).ToList());
 
                 View.PrintInputText($"{View.Nl}index");
-                var index = View.ReadIndexFromInput((uint)assemblyFileNames.Count);
+                var index = View.ReadIndexFromInput((uint) assemblyFileNames.Count);
 
                 filePath = assemblyFileNames[index - 1];
-                
+
                 View.PrintLine();
 
                 if (!File.Exists(filePath)) {
@@ -500,7 +516,7 @@ namespace UBB_NASM_Runner
                     View.PrintError($"{filePath} has been moved/renamed");
                     goto ChooseFileStart;
                 }
-                
+
                 View.PrintLine();
             }
             catch (Exception exception) {
@@ -531,7 +547,7 @@ namespace UBB_NASM_Runner
 
                             if (toInc != "mio.inc" && toInc != "io.inc") {
                                 SearchFileForIncludes(
-                                    Path.Combine(Model.ProjectsPath, GetFileNameWithAsmExtension(toInc)),
+                                    Path.Combine(Model.GetProjectsPath(), GetFileNameWithAsmExtension(toInc)),
                                     ref includeFiles);
                             }
                         }

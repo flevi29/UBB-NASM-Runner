@@ -4,19 +4,22 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-// NOTE: nasm.exe, ld.exe, nlink.exe and projects created by them can't have their stdio redirected
-// and so we cannot manipulate any of those, the way they handle their io is a bit of a mystery to me
+// NOTE: nasm.exe, ld.exe, nlink.exe and projects created by them can't have their stdio redirected,
+// at least not from .NET, and so we cannot manipulate any of those, the way they handle their io
+// is a bit of a mystery to me
 namespace UBB_NASM_Runner
 {
     public static class AppRunner
     {
         private static TaskCompletionSource<bool> _eventHandled;
         private static Process _process;
+        private static bool _terminatedWithCtrC = false;
 
         public static async Task<int> StartConsoleApp(string executablePath, string arguments = "") {
             if (!File.Exists(executablePath)) {
                 throw new ArgumentException($"{executablePath} does not exist");
             }
+
             Console.CancelKeyPress += HandleCtrlC;
             _eventHandled = new TaskCompletionSource<bool>();
 
@@ -35,14 +38,18 @@ namespace UBB_NASM_Runner
                     Console.WriteLine(ex.Message);
                     return 1;
                 }
-                
+
                 await Task.WhenAny(_eventHandled.Task);
-                exitCode = _process.ExitCode;
+                exitCode = _terminatedWithCtrC
+                    ? 15
+                    : _process.ExitCode;
             }
 
+            _terminatedWithCtrC = false;
             return exitCode;
         }
 
+        // For now it looks like actest.exe terminates stuck apps, or maybe the system does
         public static Process GetProcessByExePath(string executablePath) {
             if (executablePath.Equals(string.Empty)) return null;
 
@@ -51,20 +58,19 @@ namespace UBB_NASM_Runner
                 .FirstOrDefault(
                     p => p.MainModule?.FileName != null && p.MainModule != null &&
                          p.MainModule.FileName.Equals(executablePath)
-                    );
+                );
         }
 
         private static void ProcessExited(object sender, EventArgs e) {
-            // Here I can do stuff after the process has exited
             Console.CancelKeyPress -= HandleCtrlC;
             _eventHandled.TrySetResult(true);
         }
-        
+
         private static void HandleCtrlC(object sender, ConsoleCancelEventArgs args) {
+            _terminatedWithCtrC = true;
             Console.In.Dispose();
-            // TODO: Write proper error message via the View class
-            Console.WriteLine();
-            View.PrintError("Process terminated with Ctr-C . . .");
+            View.PrintLine();
+            View.PrintWarning("Process terminated with Ctr-C . . .");
             args.Cancel = true;
         }
     }
