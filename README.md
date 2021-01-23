@@ -35,10 +35,15 @@ instead of having to struggle with all those pesky terminal commands.
 > stuck, <kbd>Ctrl</kbd> + <kbd>C</kbd> will kill it without
 > killing `UBB-NASM-Runner`  
 > Unfortunately if the program is stuck asking for input
-> then this won't help, you should either close the `UBB-NASM-Runner`
-> window, or (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd>)
-> find the currently running project's process and terminate it
-> that way
+> then this won't help, you should do one of the following 
+> (say you run **STRPELDA**, like in the image above) :  
+> - close the `UBB-NASM-Runner` window, or 
+> - <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd>,
+> find `STRPELDA.exe` and terminate it, or
+> - open `cmd` and type
+> ```batch
+> taskkill /F /im STRPELDA.exe
+> ```
 
 ## Download
 
