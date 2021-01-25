@@ -57,7 +57,7 @@ Place `UBB-NASM-Runner` in the folder where you have your _assembly projects_
 and all the _[binaries](https://www.cs.ubbcluj.ro/~afra/ac/aclab.zip)_ 
 and the _[tester](https://www.cs.ubbcluj.ro/~scsanad/actest/actest.zip)_ provided by the university.
 
-Execute it with a terminal, like [Windows Terminal]("https://github.com/microsoft/terminal#installing-and-running-windows-terminal" "Awesome terminal for Windows!") 
+Execute it with a terminal, like [Windows Terminal](https://github.com/microsoft/terminal#installing-and-running-windows-terminal) 
 or through file explorer.
 
 > **NOTE** Once you start `UBB-NASM-Runner` it will ask you
