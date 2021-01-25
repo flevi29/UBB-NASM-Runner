@@ -45,10 +45,10 @@ instead of having to struggle with all those pesky terminal commands.
 
 ## Download
 
-- [UBB-NASM-Runner.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner.exe)
+- [:arrow_double_down:UBB-NASM-Runner.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner.exe)
 \- needs [.NET Core Runtime 5.0](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.2-windows-x64-installer)  
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- or -
-- [UBB-NASM-Runner.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner-standalone.exe)
+- [:arrow_double_down:UBB-NASM-Runner.exe](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/UBB-NASM-Runner-standalone.exe)
 \- standalone, takes up more space
 
 ## Install
