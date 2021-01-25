@@ -15,7 +15,10 @@ namespace UBB_NASM_Runner
             uint counter = 1;
             var filePath = string.Empty;
 
-            CleanUpDirectory();
+            if (!DirectoryCleanUp()) {
+                View.ReadKey();
+                Environment.Exit(1);
+            }
 
             var command = new ConsoleKeyInfo(
                 'f', ConsoleKey.F, false, false, false);
@@ -150,9 +153,33 @@ namespace UBB_NASM_Runner
             File.WriteAllBytes(Model.HushPath, value);
         }
 
-        private static void CleanUpDirectory() {
+        private static bool IsThereMissingImportantFiles() {
+            var missingFiles = GetMissingImportantFiles();
+            missingFiles.Remove("actest.exe");
+            if (!missingFiles.Any()) return false;
+            var warning = $"The following file(s) are missing : {View.Nl}";
+            warning = missingFiles.Aggregate(
+                warning, (current, missingFile) =>
+                    current + $"\t{missingFile}{View.Nl}"
+            );
+            View.PrintWarning(warning);
+            return true;
+        }
+
+        private static bool DirectoryCleanUp() {
             try {
-                var filePaths = GetAllFilePathsWithinDir(Model.RootPath);
+                if (IsThereMissingImportantFiles()) {
+                    return false;
+                }
+
+                var filePaths = GetAllFilePathsWithinDir(Model.RootPath).ToList();
+                if (!filePaths.Any(s => s.Contains(".asm"))) {
+                    View.PrintError($"There are no assembly project files in {Model.RootPath} " +
+                                    "or above it with a depth of 3");
+
+                    View.PrintError("Make sure you put this program right next to your projects");
+                    return false;
+                }
 
                 if (!Directory.Exists(Model.BinPath)) {
                     Directory.CreateDirectory(Model.BinPath);
@@ -199,9 +226,12 @@ namespace UBB_NASM_Runner
                         File.Move(filePath, destPath);
                     }
                 }
+
+                return true;
             }
             catch (Exception exception) {
                 View.PrintError(exception);
+                return false;
             }
         }
 
@@ -256,16 +286,20 @@ namespace UBB_NASM_Runner
                 }
             };
             process.Start();
-            if (!process.WaitForExit(5000)) {
+            if (!process.WaitForExit(10000)) {
+                process.Kill();
                 return;
             }
 
-            while (!process.StandardOutput.EndOfStream) {
-                var line = process.StandardOutput.ReadLine();
-                if (line == null || !line.ToLower().Contains("labs:")) continue;
-                View.PrintWhiteText(line);
-                break;
+            var acTestStringsOnePiece = process.StandardOutput.ReadToEnd();
+            var acTestStrings = acTestStringsOnePiece.Split(View.Nl);
+            foreach (var acTestString in acTestStrings) {
+                if (!acTestString.ToLower().Contains("labs:")) continue;
+                View.PrintWhiteText(acTestString);
+                return;
             }
+
+            View.PrintLine(acTestStringsOnePiece);
         }
 
         private static async Task AcTest(string filePath, bool changeLab) {
@@ -358,29 +392,14 @@ namespace UBB_NASM_Runner
         }
 
         private static List<string> GetMissingImportantFiles() {
-            return Model.ImportantFiles
-                .Select(file => Path.Combine(Model.BinPath, file))
-                .Where(filePath => !File.Exists(filePath) && !filePath.Equals(Model.AcTestPath))
-                .ToList();
+            var notMissing = GetAllFilePathsWithinDir(Model.RootPath)
+                .Select(Path.GetFileName)
+                .Where(f => Model.ImportantFiles.Contains(f))
+                .ToArray();
+            return Model.ImportantFiles.Except(notMissing).ToList();
         }
 
         private static async Task CompileAndStartApp(string filePath) {
-            if (filePath.Equals(string.Empty)) {
-                View.PrintWarning($"There are no .asm files in \\projects or in the root directory{View.Nl}");
-                View.PrintLine();
-                return;
-            }
-
-            var missingFiles = GetMissingImportantFiles();
-            if (!missingFiles.Count.Equals(0)) {
-                var warning = $"The following files are missing : {View.Nl}";
-                warning = missingFiles.Aggregate(
-                    warning, (current, missingFile) => current + $"\t{missingFile}{View.Nl}"
-                );
-                View.PrintWarning(warning);
-                return;
-            }
-
             if ((await CompileApp(filePath)).Equals(0)) {
                 await RunApp(filePath);
             }
@@ -389,16 +408,29 @@ namespace UBB_NASM_Runner
         }
 
         private static async Task<int> CompileApp(string filePath) {
+            if (filePath.Equals(string.Empty)) {
+                View.PrintWarning("There are no .asm files in \\projects or in the root directory");
+                View.PrintLine();
+                return 1;
+            }
+
             var filesToDelete = new List<string>();
             int exitCode;
             var argumentLibType = GetLibraryArguments(filePath);
 
-            Directory.SetCurrentDirectory(Model.BinPath);
-            if ((exitCode = await AssembleApp(filePath, filesToDelete)).Equals(0)) {
-                exitCode = await LinkApp(filePath, argumentLibType);
-            }
+            try {
+                Directory.SetCurrentDirectory(Model.BinPath);
+                if ((exitCode = await AssembleApp(filePath, filesToDelete)).Equals(0)) {
+                    exitCode = await LinkApp(filePath, argumentLibType);
+                }
 
-            Directory.SetCurrentDirectory(Model.RootPath);
+                Directory.SetCurrentDirectory(Model.RootPath);
+            }
+            catch (Exception ex) {
+                View.PrintError(ex);
+                IsThereMissingImportantFiles();
+                return 1;
+            }
 
             if (exitCode.Equals(0)) {
                 string exeBinPath = Path.Combine(Model.BinPath, GetFileNameWithExeExtension(filePath)),
@@ -442,8 +474,9 @@ namespace UBB_NASM_Runner
                 SearchFileForIncludes(filePath, ref incFiles);
                 if (!incFiles.Equals(string.Empty)) {
                     // compiles all include files
+                    var ioMio = new[] {"mio.inc", "io.inc"};
                     foreach (var incFile in incFiles.Split(' ')) {
-                        if (incFile.Equals(string.Empty) || new[] {"mio.inc", "io.inc"}.Contains(incFile)) {
+                        if (incFile.Equals(string.Empty) || ioMio.Contains(incFile)) {
                             continue;
                         }
 
@@ -466,7 +499,7 @@ namespace UBB_NASM_Runner
                 var objFullPath = GetFileBinPathWithObjExtension(filePath);
                 if (!compiledObjects.Contains(objFullPath)) {
                     // If build failed throw exception
-                    var args = $"-i{Model.GetProjectsPath()}\\ " +
+                    var args = $"-i ..\\{Path.GetFileName(Model.GetProjectsPath())}\\ " +
                                $"-f win32 " +
                                $"-o \"{objFullPath}\" \"{filePath}\"";
                     if ((exitCode = await AppRunner.StartConsoleApp(Model.NasmPath, args)) != 0) {
@@ -489,8 +522,6 @@ namespace UBB_NASM_Runner
             try {
                 ChooseFileStart:
 
-                View.PrintNewInstanceDecoration();
-
                 var assemblyFileNames = new DirectoryInfo(Model.GetProjectsPath())
                     .GetFiles()
                     .Where(path => path.Extension.ToLower().Equals(".asm") &&
@@ -500,6 +531,8 @@ namespace UBB_NASM_Runner
                     .ToList();
 
                 if (assemblyFileNames.Count.Equals(0)) return string.Empty;
+
+                View.PrintNewInstanceDecoration();
 
                 View.PrintWhiteText($"Type index of .asm file you want to compile and execute :{View.Nl}");
                 View.PrintOrderedListItem(assemblyFileNames.Select(Path.GetFileNameWithoutExtension).ToList());
@@ -577,10 +610,25 @@ namespace UBB_NASM_Runner
             var list = new List<string>();
             if (depth < 1) return list;
             foreach (var directory in Directory.EnumerateDirectories(dirPath)) {
-                list.AddRange(GetAllFilePathsWithinDir(directory, depth - 1));
+                if ((new DirectoryInfo(directory).Attributes & FileAttributes.Hidden)
+                    .Equals(FileAttributes.Hidden)) continue;
+                try {
+                    list.AddRange(GetAllFilePathsWithinDir(directory, depth - 1));
+                }
+                catch (Exception) {
+                    // might need to look at this in more detail
+                    //Console.WriteLine(e);
+                }
             }
 
-            list.AddRange(Directory.GetFiles(dirPath));
+            try {
+                list.AddRange(Directory.GetFiles(dirPath));
+            }
+            catch (Exception) {
+                // might need to look at this in more detail
+                //Console.WriteLine(e);
+            }
+
             return list;
         }
     }

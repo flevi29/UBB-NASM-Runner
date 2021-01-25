@@ -10,7 +10,6 @@ namespace UBB_NASM_Runner
         private const ConsoleColor Yellow = ConsoleColor.Yellow,
             DarkYellow = ConsoleColor.DarkYellow,
             Green = ConsoleColor.Green,
-            DarkRed = ConsoleColor.DarkRed,
             White = ConsoleColor.White,
             Black = ConsoleColor.Black,
             Blue = ConsoleColor.Blue,
@@ -235,14 +234,14 @@ namespace UBB_NASM_Runner
                 PreBackground = Console.BackgroundColor,
                 PreForeground = Console.ForegroundColor;
 
-            private static Stack<Tuple<ConsoleColor, ConsoleColor>> _storedColors = new();
+            private static readonly Stack<Tuple<ConsoleColor, ConsoleColor>> StoredColors = new();
 
             public static void SetAndPushColors(ConsoleColor foreground) {
                 SetAndPushColors(foreground, Console.BackgroundColor);
             }
 
             public static void SetAndPushColors(ConsoleColor foreground, ConsoleColor background) {
-                _storedColors.Push(Tuple.Create(Console.ForegroundColor, Console.BackgroundColor));
+                StoredColors.Push(Tuple.Create(Console.ForegroundColor, Console.BackgroundColor));
                 Console.ForegroundColor = foreground;
                 Console.BackgroundColor = background;
             }
@@ -253,8 +252,8 @@ namespace UBB_NASM_Runner
 
             public static void SetPreviousAndPopColors(ushort times = 1) {
                 while (times-- > 0) {
-                    if (_storedColors.Count > 0) {
-                        var (fore, back) = _storedColors.Pop();
+                    if (StoredColors.Count > 0) {
+                        var (fore, back) = StoredColors.Pop();
                         Console.ForegroundColor = fore;
                         Console.BackgroundColor = back;
                     }

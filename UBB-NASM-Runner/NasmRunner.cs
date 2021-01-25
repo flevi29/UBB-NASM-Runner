@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-
 namespace UBB_NASM_Runner
 {
     internal static class NasmRunner
