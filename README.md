@@ -3,7 +3,7 @@
 This program compiles and runs and tests assembly project files **at the press of a single button**,
 instead of having to struggle with all those pesky terminal commands.
 
-> :warning: **NOTE** You'll need to know how to compile / link / run a project for **exams** manually,
+> :warning:**NOTE** You'll need to know how to compile / link / run a project for **exams** manually,
 > so make sure you'll know how to do it by then
 
 ![demo](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/demo.png)
@@ -32,7 +32,7 @@ instead of having to struggle with all those pesky terminal commands.
 > **NOTE** if a currently running program is
 > stuck, <kbd>Ctrl</kbd> + <kbd>C</kbd> will kill it without
 > killing `UBB-NASM-Runner`  
->> :bulb: Unfortunately if the program is stuck asking for input
+>> :bulb:Unfortunately if the program is stuck asking for input
 >> then this won't help, you should do one of the following 
 >> (say you run `STRPELDA`, like in the image above) :  
 >> - close the `UBB-NASM-Runner` window (loss of history), or 
@@ -60,12 +60,14 @@ and the _[tester](https://www.cs.ubbcluj.ro/~scsanad/actest/actest.zip)_ provide
 Execute it with a terminal, like [Windows Terminal](https://github.com/microsoft/terminal#installing-and-running-windows-terminal) 
 or through file explorer.
 
-> **NOTE** Once you start `UBB-NASM-Runner` it will ask you
-> if you want your project files moved into `\projects` folder
->> If you answered with _**yes**_, don't panic if your
->> currently open text editor says that your files are
->> missing, they're perfectly safe in the aforementioned
->> directory  
->>
->> :information_source: You can change this by deleting `\bin\hushprojects` 
+> :warning:**NOTE** Once you start `UBB-NASM-Runner` it will ask you
+> if you want your project files moved into `\projects` folder or `\ `
+> (you probably keep them in `\ ` either way)   
+> These are your two options, because of how `nasm.exe` handles
+> paths, it cannot escape spaces for include files, so
+> if you had your projects and it's include files in
+> `\my project folder` then `nasm.exe` would start complaining
+> about not finding your include files (NASM version 2.11.08)
+>> :information_source: You can change the selected 
+>> directory for your projects by deleting `\bin\hushprojects` 
 >> and restarting the application

@@ -454,10 +454,10 @@ namespace UBB_NASM_Runner
 
         private static async Task<int> LinkApp(string filePath, string argumentLibType) {
             try {
-                // Run Nlink, it doesnt escape spaces within quotation marks in arguments
-                return await AppRunner.StartConsoleApp(Model.NLinkPath,
-                    $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
-                    $"-o {GetFileNameWithExeExtension(filePath)}");
+                // Run Nlink, it doesn't escape spaces within quotation marks in arguments
+                var args = $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
+                           $"-o {GetFileNameWithExeExtension(filePath)}";
+                return await AppRunner.StartConsoleApp(Model.NLinkPath,args);
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -499,6 +499,7 @@ namespace UBB_NASM_Runner
                 var objFullPath = GetFileBinPathWithObjExtension(filePath);
                 if (!compiledObjects.Contains(objFullPath)) {
                     // If build failed throw exception
+                    // nasm.exe -i argument option can't escape spaces for some reason
                     var args = $"-i ..\\{Path.GetFileName(Model.GetProjectsPath())}\\ " +
                                $"-f win32 " +
                                $"-o \"{objFullPath}\" \"{filePath}\"";
