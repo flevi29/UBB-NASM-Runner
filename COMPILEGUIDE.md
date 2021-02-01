@@ -70,7 +70,7 @@ pause
 Say you want to compile `STRPELDA.asm`, like in the demo image
 you might've seen  
 
-It has the following includes :
+It has the following includes ↴
 
 ```assembly
 %include 'IOSTR.inc'
@@ -84,7 +84,7 @@ It has the following includes :
 > and `IONUM.asm`, or `mio.inc` in 
 > everything except `STRPELDA.asm`
 
-You probably get the idea from this code snippet :
+You probably get the idea from this code snippet ↴
 
 ```batch
 @echo off
