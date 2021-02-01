@@ -20,35 +20,35 @@ namespace UBB_NASM_Runner
         public static readonly string Nl = Environment.NewLine;
         private static uint _lengthOfControls;
 
-        private static readonly string[] ErrorMessages = {
-            "She sells seashells by the seashore.",
+        // private static readonly string[] ErrorMessages = {
+        //     "She sells seashells by the seashore.",
+        //
+        //     $"How much wood would a woodchuck chuck if a woodchuck could chuck wood?{Nl}" +
+        //     $"He would chuck, he would, as much as he could, and chuck as much wood{Nl}" +
+        //     "as a woodchuck would if a woodchuck could chuck wood.",
+        //
+        //     $"If you must cross a course cross cow across a crowded cow crossing,{Nl}" +
+        //     "cross the cross coarse cow across the crowded cow crossing carefully.",
+        //
+        //     "Which witch switched the Swiss wristwatches?",
+        //
+        //     $"To begin to toboggan first buy a toboggan, but don't buy too big a toboggan.{Nl}" +
+        //     "Too big a toboggan is too big a toboggan to buy to begin to toboggan."
+        // };
 
-            $"How much wood would a woodchuck chuck if a woodchuck could chuck wood?{Nl}" +
-            $"He would chuck, he would, as much as he could, and chuck as much wood{Nl}" +
-            "as a woodchuck would if a woodchuck could chuck wood.",
-
-            $"If you must cross a course cross cow across a crowded cow crossing,{Nl}" +
-            "cross the cross coarse cow across the crowded cow crossing carefully.",
-
-            "Which witch switched the Swiss wristwatches?",
-
-            $"To begin to toboggan first buy a toboggan, but don't buy too big a toboggan.{Nl}" +
-            "Too big a toboggan is too big a toboggan to buy to begin to toboggan."
-        };
-
-        public static string GetRandomErrorMessage() {
-            return ErrorMessages[new Random().Next(ErrorMessages.Length)];
-        }
+        // public static string GetRandomErrorMessage() {
+        //     return ErrorMessages[new Random().Next(ErrorMessages.Length)];
+        // }
 
         // For future if emoji use is planned
         // Console.OutputEncoding = System.Text.Encoding.UTF8; will be required
-        public static bool ConsoleSupportsUnicode() {
-            var cursorLeft = Console.CursorLeft;
-            Console.Write("✅");
-            var leftAdvance = Console.CursorLeft - cursorLeft;
-            Console.Write(string.Concat(Enumerable.Repeat("\b \b", leftAdvance)));
-            return leftAdvance != 1;
-        }
+        // public static bool ConsoleSupportsUnicode() {
+        //     var cursorLeft = Console.CursorLeft;
+        //     Console.Write("✅");
+        //     var leftAdvance = Console.CursorLeft - cursorLeft;
+        //     Console.Write(string.Concat(Enumerable.Repeat("\b \b", leftAdvance)));
+        //     return leftAdvance != 1;
+        // }
 
         public static void SetTitle(string title) {
             if (!title.Equals(string.Empty)) {
@@ -76,11 +76,11 @@ namespace UBB_NASM_Runner
             Console.SetCursorPosition(0, Console.CursorTop);
         }
 
-        public static void MoveCursorUp(uint amount = 1) {
+        private static void MoveCursorUp(uint amount = 1) {
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop - (int) amount);
         }
 
-        public static void ScrollDown() {
+        private static void ScrollDown() {
             CursorVisibility(false);
             Console.Write(string.Concat(Enumerable.Repeat(Nl, Console.WindowHeight - 2)));
             Console.SetCursorPosition(0, Console.CursorTop - Console.WindowHeight + 2);
@@ -195,17 +195,17 @@ namespace UBB_NASM_Runner
 
             if (!middleText.Equals(string.Empty)) {
                 finalMidText = counter switch {
-                    0 => $" <{middleText}> ",
-                    1 => $" {middleText} <{counter}> ",
-                    _ => $" <{counter}> "
+                    0 => $"{middleText}",
+                    1 => $"{middleText} {counter}",
+                    _ => $"{counter}"
                 };
             }
             else {
-                finalMidText = " +++ ";
+                finalMidText = " ¡!¡ ";
             }
 
-            //               -==: EXAMPLE <4> :==-
-            finalMidText = $"-==:{finalMidText}:==-";
+            //               «« EXAMPLE 1 »»
+            finalMidText = $"«« {finalMidText} »»";
 
             var count = Console.WindowWidth / 2 - finalMidText.Length / 2;
             if (count > 0) {

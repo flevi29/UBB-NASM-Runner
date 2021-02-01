@@ -432,19 +432,7 @@ namespace UBB_NASM_Runner
                 return 1;
             }
 
-            if (exitCode.Equals(0)) {
-                string exeBinPath = Path.Combine(Model.BinPath, GetFileNameWithExeExtension(filePath)),
-                    exeCompiledPath = Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath));
-                if (File.Exists(exeBinPath)) {
-                    if (File.Exists(exeCompiledPath)) {
-                        File.Delete(exeCompiledPath);
-                    }
-
-                    File.Move(exeBinPath, exeCompiledPath);
-                }
-            }
-
-            // Delete all created object files
+            // Delete all created object files, should I though?
             foreach (var file in filesToDelete.Where(File.Exists)) {
                 File.Delete(file);
             }
@@ -454,9 +442,9 @@ namespace UBB_NASM_Runner
 
         private static async Task<int> LinkApp(string filePath, string argumentLibType) {
             try {
-                // Run Nlink, it doesn't escape spaces within quotation marks in arguments
+                // Run Nlink
                 var args = $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
-                           $"-o {GetFileNameWithExeExtension(filePath)}";
+                           $"-o \"{Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath))}\"";
                 return await AppRunner.StartConsoleApp(Model.NLinkPath,args);
             }
             catch (Exception exception) {

@@ -3,8 +3,8 @@
 This program compiles and runs and tests assembly project files **at the press of a single button**,
 instead of having to struggle with all those pesky terminal commands.
 
-> :warning:**NOTE** You'll need to know how to compile / link / run a project for **exams** manually,
-> so make sure you'll know how to do it by then
+> :warning:**NOTE** You'll most probably be tasked to compile / link / run a project for **exams _manually_**,
+> [here's some help with that](COMPILEGUIDE.md)
 
 ![demo](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/demo.png)
 
@@ -61,8 +61,8 @@ Execute it with a terminal, like [Windows Terminal](https://github.com/microsoft
 or through file explorer.
 
 > :warning:**NOTE** Once you start `UBB-NASM-Runner` it will ask you
-> if you want your project files moved into `\projects` folder or `\ `
-> (you probably keep them in `\ ` either way)   
+> if you want your project files moved into `\projects` folder or ` \ `&nbsp;
+> (you probably keep them in ` \ `&nbsp;either way)   
 > These are your two options, because of how `nasm.exe` handles
 > paths, it cannot escape spaces for include files, so
 > if you had your projects and it's include files in

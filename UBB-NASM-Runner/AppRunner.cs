@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-// NOTE: nasm.exe, ld.exe, nlink.exe and projects created by them can't have their stdio redirected,
+// NOTE: nasm.exe, nlink.exe and projects created by them can't have their stdio redirected,
 // at least not from .NET, and so we cannot manipulate any of those, the way they handle their io
 // is a bit of a mystery to me
 namespace UBB_NASM_Runner
