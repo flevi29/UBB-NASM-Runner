@@ -4,7 +4,7 @@ This program compiles and runs and tests assembly project files **at the press o
 instead of having to struggle with all those pesky terminal commands.
 
 > :warning: You'll most probably be tasked to compile / link / run a project **_manually_** for **exams**,
-> [here's some help with that](COMPILEGUIDE.md)
+> [here's some help with that](COMPILEGUIDE.md#manually-compiling-ubb-nasm-projects)
 
 ![demo](demo.png)
 
