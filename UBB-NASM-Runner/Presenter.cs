@@ -443,12 +443,12 @@ namespace UBB_NASM_Runner
         private static async Task<int> LinkApp(string filePath, string argumentLibType) {
             try {
                 // Run Nlink, ignores quotes when it comes to escaping
-                var projectsPathName = Path.GetFileName(Model.GetProjectsPath());
-                var projectsPath = projectsPathName == "projects"
-                    ? $"..\\{projectsPathName}\\"
+                var compiledPathName = Path.GetFileName(Model.CompiledPath);
+                var compiledPath = compiledPathName == "compiled"
+                    ? $"..\\{compiledPathName}\\"
                     : "..\\";
                 var args = $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
-                           $"-o {projectsPath}{GetFileNameWithExeExtension(filePath)}";
+                           $"-o {compiledPath}{GetFileNameWithExeExtension(filePath)}";
                 return await AppRunner.StartConsoleApp(Model.NLinkPath,args);
             }
             catch (Exception exception) {
