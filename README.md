@@ -6,7 +6,7 @@ instead of having to struggle with all those pesky terminal commands.
 > :warning:**NOTE** You'll most probably be tasked to compile / link / run a project for **exams _manually_**,
 > [here's some help with that](COMPILEGUIDE.md)
 
-![demo](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/demo.png)
+![demo](demo.png)
 
 ### Convenient
 

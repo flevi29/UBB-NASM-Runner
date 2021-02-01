@@ -1,13 +1,14 @@
 # Manually compiling UBB NASM projects
 
-Everything should be in the same directory for the
-sake of simplicity in this case
-  
-You should create a script which you can then 
-run any time, without having to scroll through command
-history or retype anything  
+Everything should be in the **same directory** for the
+sake of simplicity.
 
-![demonstration](https://raw.githubusercontent.com/FLevent29/UBB-NASM-Runner/master/demonstration.gif)
+:information_source: You should create a **script** which you can then 
+run any time, without having to scroll through command
+history or retype anything. If something need be changed
+you can just edit the script itself.
+
+![demonstration](demonstration1.gif)
 
 ## Compile single file project
 
@@ -62,6 +63,8 @@ pause
   it might be annoying if you run the script from
   a terminal directly, in that case it should be left out
 
+![demonstration](demonstration2.gif)
+
 ## Compile multiple file project
 
 Say you want to compile `STRPELDA.asm`, like in the demo image
@@ -75,10 +78,11 @@ It has the following includes :
 %include 'IONUM.inc'
 ```
 
-These all have their `.asm` counterparts that need to be
-compiled and those `.asm` files have their own includes,
-some are shared, like `IOSTR.inc` both in `STRPELDA.asm`
-and `IONUM.asm`
+> :information_source: These all have their `*.asm` counterparts that need to be
+> compiled and those `*.asm` files have their own includes  
+> Some are shared, like `IOSTR.inc` both in `STRPELDA.asm`
+> and `IONUM.asm`, or `mio.inc` in 
+> everything except `STRPELDA.asm`
 
 You probably get the idea from this code snippet :
 
