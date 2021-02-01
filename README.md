@@ -3,7 +3,7 @@
 This program compiles and runs and tests assembly project files **at the press of a single button**,
 instead of having to struggle with all those pesky terminal commands.
 
-> :warning:**NOTE** You'll most probably be tasked to compile / link / run a project for **exams _manually_**,
+> :warning: You'll most probably be tasked to compile / link / run a project **_manually_** for **exams**,
 > [here's some help with that](COMPILEGUIDE.md)
 
 ![demo](demo.png)
@@ -46,28 +46,29 @@ instead of having to struggle with all those pesky terminal commands.
 ## Download
 
 - [:arrow_double_down:UBB-NASM-Runner.exe](https://github.com/FLevent29/UBB-NASM-Runner/releases/download/1.0/UBB-NASM-Runner.exe)
-\- needs [.NET Core Runtime 5.0](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-5.0.2-windows-x64-installer)  
+\- needs [.NET Core Runtime 5](https://dotnet.microsoft.com/download/dotnet/current/runtime)  
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- or -
-- [:arrow_double_down:UBB-NASM-Runner.exe](https://github.com/FLevent29/UBB-NASM-Runner/releases/download/1.0/UBB-NASM-Runner-standalone.exe)
-\- standalone, takes up more space
+- [:arrow_double_down:UBB-NASM-Runner-standalone.exe](https://github.com/FLevent29/UBB-NASM-Runner/releases/download/1.0/UBB-NASM-Runner-standalone.exe)
+\- takes up more space
 
 ## Install
 
 Place `UBB-NASM-Runner` in the folder where you have your _assembly projects_ 
 and all the _[binaries](https://www.cs.ubbcluj.ro/~afra/ac/aclab.zip)_ 
-and the _[tester](https://www.cs.ubbcluj.ro/~scsanad/actest/actest.zip)_ provided by the university.
+and the _[tester](https://www.cs.ubbcluj.ro/~scsanad/actest/actest.zip)_ 
+provided by the university.
 
 Execute it with a terminal, like [Windows Terminal](https://github.com/microsoft/terminal#installing-and-running-windows-terminal) 
 or through file explorer.
 
-> :warning:**NOTE** Once you start `UBB-NASM-Runner` it will ask you
+> :warning: Once you start `UBB-NASM-Runner` it will ask you
 > if you want your project files moved into `\projects` folder or ` \ `&nbsp;
-> (you probably keep them in ` \ `&nbsp;either way)   
+> (you probably (will) keep them in ` \ `&nbsp;either way)   
 > These are your two options, because of how `nasm.exe` handles
 > paths, it cannot escape spaces for include files, so
 > if you had your projects and it's include files in
 > `\my project folder` then `nasm.exe` would start complaining
-> about not finding your include files (NASM version 2.11.08)
+> (NASM version 2.11.08)
 >> :information_source: You can change the selected 
 >> directory for your projects by deleting `\bin\hushprojects` 
 >> and restarting the application

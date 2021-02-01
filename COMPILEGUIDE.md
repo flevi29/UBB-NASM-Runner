@@ -3,14 +3,36 @@
 Everything should be in the **same directory** for the
 sake of simplicity.
 
-:information_source: You should create a **script** which you can then 
+:bulb: You should create a **script** which you can then 
 run any time, without having to scroll through command
-history or retype anything. If something need be changed
+history or retype anything. If something needs to be changed
 you can just edit the script itself.
 
 ![demonstration](demonstration1.gif)
 
 ## Compile single file project
+
+`example.asm` ↴
+
+```assembly
+%include 'io.inc'
+
+global main
+
+section .text
+
+main:
+    mov     eax, str
+    call    io_writestr
+
+    ret
+
+section .data
+    str:    db  "Hello, world!", 0
+```
+<br/>
+
+`compile.bat` ↴
 
 ```batch
 @echo off
