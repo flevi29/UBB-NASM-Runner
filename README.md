@@ -6,7 +6,7 @@ instead of having to struggle with all those pesky terminal commands.
 > :warning: You'll most probably be tasked to compile / link / run a project **_manually_** for **exams**,
 > [here's some help with that](COMPILEGUIDE.md#manually-compiling-ubb-nasm-projects)
 
-![demo](demo.png)
+![demo](demo.gif)
 
 ### Convenient
 
