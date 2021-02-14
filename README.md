@@ -62,13 +62,13 @@ Execute it with a terminal, like [Windows Terminal](https://github.com/microsoft
 or through file explorer.
 
 > :warning: Once you start `UBB-NASM-Runner` it will ask you
-> if you want your project files moved into `\projects` folder or ` \ `&nbsp;
-> (you probably (will) keep them in ` \ `&nbsp;either way)   
+> if you want your project files moved into `.\projects` folder or ` .\ `&nbsp;
+> (you probably (will) keep them in ` .\ `&nbsp;either way)   
 > These are your two options, because of how `nasm.exe` handles
 > paths, it cannot escape spaces for include files, so
 > if you had your projects and it's include files in
-> `\my project folder` then `nasm.exe` would start complaining
+> `.\my project folder` then `nasm.exe` would start complaining
 > (NASM version 2.11.08)
 >> :information_source: You can change the selected 
->> directory for your projects by deleting `\bin\hushprojects` 
+>> directory for your projects by deleting `.\bin\hushprojects` 
 >> and restarting the application
