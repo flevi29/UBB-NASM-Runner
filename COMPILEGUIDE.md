@@ -111,9 +111,9 @@ You probably get the idea from this code snippet ↴
 ```batch
 @echo off
 
-.\nasm.exe -f win32 IOSTR.asm
-.\nasm.exe -f win32 STRINGS.asm
-.\nasm.exe -f win32 IONUM.asm
+.\nasm.exe -f win32 IOSTR.asm && ^
+.\nasm.exe -f win32 STRINGS.asm && ^
+.\nasm.exe -f win32 IONUM.asm && ^
 .\nasm.exe -f win32 STRPELDA.asm
 
 if %errorlevel% equ 0 (
@@ -128,3 +128,10 @@ echo.
 echo.
 pause
 ```
+
+- `&&` executes the next command only if the first one 
+  succeeds  
+
+
+- `^` escapes the next character (new line in this case) 
+  so commands can be placed in new lines with `&&`
