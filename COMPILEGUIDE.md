@@ -37,33 +37,28 @@ section .data
 ```batch
 @echo off
 
-.\nasm.exe -f win32 example.asm
+.\nasm.exe -f win32 example.asm && ^
+.\nlink.exe example.obj -lio -o example.exe && ^
+.\example.exe
 
-if %errorlevel% equ 0 (
-    .\nlink.exe example.obj -lio -o example.exe
-    
-    if %errorlevel% equ 0 (
-        .\example.exe
-    )
-)
-
-echo.
 echo.
 pause
 ```
 
 - `@echo off` keeps the console clean
-  
+
 
 - `.\nasm.exe -f win32 example.asm` compiles `example.asm` into `example.obj`  
   `-f win32` is for format Win32 (i386)  
   More details [here](https://nasm.us/doc/nasmdoc2.html)
 
 
-- `%errorlevel%` is the last exit code, so if `nasm.exe` 
-  failed with errors, the script stops, this way it doesn't
-  compile with the older object file, or if only the linker
-  fails then it won't run the older executable
+- `&&` executes the next command only if the first one
+  succeeds
+
+
+- `^` escapes the next character (new line in this case)
+  so commands can be placed in new lines with `&&`
 
 
 - `.\nlink.exe example.obj -lio -o example.exe` creates the
@@ -76,7 +71,7 @@ pause
 
 - Finally, if everything is **OK** so far, we run the executable
   `.\example.exe`
-  
+
 
 - `echo.` just prints a new line
 
@@ -114,24 +109,10 @@ You probably get the idea from this code snippet ↴
 .\nasm.exe -f win32 IOSTR.asm && ^
 .\nasm.exe -f win32 STRINGS.asm && ^
 .\nasm.exe -f win32 IONUM.asm && ^
-.\nasm.exe -f win32 STRPELDA.asm
+.\nasm.exe -f win32 STRPELDA.asm && ^
+.\nlink.exe STRPELDA.obj IOSTR.obj STRINGS.obj IONUM.obj -lmio -o STRPELDA.exe && ^
+.\STRPELDA.exe
 
-if %errorlevel% equ 0 (
-    .\nlink.exe STRPELDA.obj IOSTR.obj STRINGS.obj IONUM.obj -lmio -o STRPELDA.exe
-    
-    if %errorlevel% equ 0 (
-        .\STRPELDA.exe
-    )
-)
-
-echo.
 echo.
 pause
 ```
-
-- `&&` executes the next command only if the first one 
-  succeeds  
-
-
-- `^` escapes the next character (new line in this case) 
-  so commands can be placed in new lines with `&&`
