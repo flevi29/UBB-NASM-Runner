@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 // is a bit of a mystery to me
 namespace UBB_NASM_Runner
 {
-    public static class AppRunner
+    public class AppRunner
     {
-        private static TaskCompletionSource<bool> _eventHandled;
-        private static Process _process;
-        private static bool _terminatedWithCtrC = false;
+        private TaskCompletionSource<bool> _eventHandled;
+        private bool _terminatedWithCtrC;
 
-        public static async Task<int> StartConsoleApp(string executablePath, string arguments = "") {
+        public async Task<int> StartConsoleApp(string executablePath, string arguments = "") {
+            Process process;
+
             if (!File.Exists(executablePath)) {
                 throw new ArgumentException($"{executablePath} does not exist");
             }
@@ -24,15 +25,15 @@ namespace UBB_NASM_Runner
             _eventHandled = new TaskCompletionSource<bool>();
 
             int exitCode;
-            using (_process = new Process()) {
+            using (process = new Process()) {
                 try {
-                    _process.StartInfo.FileName = executablePath;
-                    _process.StartInfo.Arguments = arguments;
-                    _process.StartInfo.UseShellExecute = false;
-                    _process.StartInfo.ErrorDialog = false;
-                    _process.EnableRaisingEvents = true;
-                    _process.Exited += ProcessExited;
-                    _process.Start();
+                    process.StartInfo.FileName = executablePath;
+                    process.StartInfo.Arguments = arguments;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.ErrorDialog = false;
+                    process.EnableRaisingEvents = true;
+                    process.Exited += ProcessExited;
+                    process.Start();
                 }
                 catch (Exception ex) {
                     Console.WriteLine(ex.Message);
@@ -42,7 +43,7 @@ namespace UBB_NASM_Runner
                 await Task.WhenAny(_eventHandled.Task);
                 exitCode = _terminatedWithCtrC
                     ? 15
-                    : _process.ExitCode;
+                    : process.ExitCode;
             }
 
             _terminatedWithCtrC = false;
@@ -50,7 +51,7 @@ namespace UBB_NASM_Runner
         }
 
         // For now it looks like actest.exe terminates stuck apps, or maybe the system does
-        public static Process GetProcessByExePath(string executablePath) {
+        public Process GetProcessByExePath(string executablePath) {
             if (executablePath.Equals(string.Empty)) return null;
 
             return Process
@@ -61,12 +62,12 @@ namespace UBB_NASM_Runner
                 );
         }
 
-        private static void ProcessExited(object sender, EventArgs e) {
+        private void ProcessExited(object sender, EventArgs e) {
             Console.CancelKeyPress -= HandleCtrlC;
             _eventHandled.TrySetResult(true);
         }
 
-        private static void HandleCtrlC(object sender, ConsoleCancelEventArgs args) {
+        private void HandleCtrlC(object sender, ConsoleCancelEventArgs args) {
             _terminatedWithCtrC = true;
             Console.In.Dispose();
             View.PrintLine();

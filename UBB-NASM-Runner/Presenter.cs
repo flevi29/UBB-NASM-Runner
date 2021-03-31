@@ -329,7 +329,7 @@ namespace UBB_NASM_Runner
             try {
                 var arguments =
                     $"{labCommand} \"{Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath))}\"";
-                var exitCode = await AppRunner.StartConsoleApp(Model.AcTestPath, arguments);
+                var exitCode = await new AppRunner().StartConsoleApp(Model.AcTestPath, arguments);
 
                 if (!new[] {0, 15}.Contains(exitCode)) {
                     throw new Exception("Tester program failed");
@@ -354,7 +354,7 @@ namespace UBB_NASM_Runner
 
                 if (filePath != "" &&
                     File.Exists(Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)))) {
-                    await AppRunner.StartConsoleApp(
+                    await new AppRunner().StartConsoleApp(
                         Path.Combine(Model.CompiledPath, GetFileNameWithExeExtension(filePath)));
                 }
             }
@@ -363,32 +363,20 @@ namespace UBB_NASM_Runner
             }
         }
 
-        private static string GetLibraryArguments(string filePath) {
-            var included = "";
-            SearchFileForIncludes(filePath, ref included);
-            var mainLibTypes = "";
-            var libTypes = "";
+        private static string GetLibraryArgumentsString(List<string> list) {
+            var included = string.Empty;
+            var mainIncludes = string.Empty;
 
-            foreach (var word in included.Split(' ')) {
-                switch (word) {
-                    case "io.inc":
-                        mainLibTypes += "-lio ";
-                        break;
-                    case "mio.inc":
-                        mainLibTypes += "-lmio ";
-                        break;
-                    default: {
-                        if (word.Contains('.')) {
-                            libTypes += Path.GetFileNameWithoutExtension(word) + ".obj ";
-                        }
-
-                        break;
-                    }
+            foreach (var listItem in list) {
+                if (new[] {"mio.inc", "io.inc"}.Contains(listItem)) {
+                    mainIncludes += $" -l{Path.GetFileNameWithoutExtension(listItem)}";
+                }
+                else {
+                    included += $"{GetFileNameWithObjExtension(listItem)} ";
                 }
             }
 
-            libTypes += mainLibTypes;
-            return !libTypes.Equals("") ? libTypes[..^1] : libTypes;
+            return included + mainIncludes;
         }
 
         private static List<string> GetMissingImportantFiles() {
@@ -414,13 +402,21 @@ namespace UBB_NASM_Runner
                 return 1;
             }
 
-            var filesToDelete = new List<string>();
-            int exitCode;
-            var argumentLibType = GetLibraryArguments(filePath);
+            var exitCode = 0;
+            var listOfIncludesAndAsm = GetListOfWhatToCompile(filePath);
+            var argumentLibType = GetLibraryArgumentsString(listOfIncludesAndAsm);
+            var listOfAssembliesToCompile = 
+                listOfIncludesAndAsm.Except(new[] {"io.inc", "mio.inc"});
 
             try {
                 Directory.SetCurrentDirectory(Model.BinPath);
-                if ((exitCode = await AssembleApp(filePath, filesToDelete)).Equals(0)) {
+
+                var taskList = listOfAssembliesToCompile.Select(AssembleApp).ToList();
+                taskList.Add(AssembleApp(filePath));
+                var exitCodes = await Task.WhenAll(taskList);
+                exitCode = exitCodes.Aggregate(exitCode, (current, i) => current | i);
+
+                if (exitCode.Equals(0)) {
                     exitCode = await LinkApp(filePath, argumentLibType);
                 }
 
@@ -430,11 +426,6 @@ namespace UBB_NASM_Runner
                 View.PrintError(ex);
                 IsThereMissingImportantFiles();
                 return 1;
-            }
-
-            // Delete all created object files, should I though?
-            foreach (var file in filesToDelete.Where(File.Exists)) {
-                File.Delete(file);
             }
 
             return exitCode;
@@ -449,7 +440,7 @@ namespace UBB_NASM_Runner
                     : "..\\";
                 var args = $"{GetFileNameWithObjExtension(filePath)} {argumentLibType} " +
                            $"-o {compiledPath}{GetFileNameWithExeExtension(filePath)}";
-                return await AppRunner.StartConsoleApp(Model.NLinkPath,args);
+                return await new AppRunner().StartConsoleApp(Model.NLinkPath, args);
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -458,49 +449,20 @@ namespace UBB_NASM_Runner
             return -1;
         }
 
-        private static async Task<int> AssembleApp(string filePath, ICollection<string> compiledObjects) {
+        private static async Task<int> AssembleApp(string filePath) {
             var exitCode = -1;
 
             try {
-                var incFiles = string.Empty;
-                SearchFileForIncludes(filePath, ref incFiles);
-                if (!incFiles.Equals(string.Empty)) {
-                    // compiles all include files
-                    var ioMio = new[] {"mio.inc", "io.inc"};
-                    foreach (var incFile in incFiles.Split(' ')) {
-                        if (incFile.Equals(string.Empty) || ioMio.Contains(incFile)) {
-                            continue;
-                        }
-
-                        var incFilePath = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, incFile);
-                        if (!File.Exists(incFilePath)) {
-                            throw new Exception($"{incFilePath} missing");
-                        }
-
-                        var associatedAssemblyFile =
-                            GetFileWithSpecificCaseInsensitiveExtension(incFilePath, "asm");
-                        if (associatedAssemblyFile.Equals(string.Empty)) {
-                            throw new Exception($"{incFile} associated assembly file missing");
-                        }
-
-                        await AssembleApp(associatedAssemblyFile, compiledObjects);
-                    }
-                }
-
-                // Add new object file to the list for cleanup
                 var objFullPath = GetFileBinPathWithObjExtension(filePath);
-                if (!compiledObjects.Contains(objFullPath)) {
-                    // If build failed throw exception
-                    // nasm.exe -i argument option can't escape spaces for some reason
-                    var args = $"-i ..\\{Path.GetFileName(Model.GetProjectsPath())}\\ " +
-                               $"-f win32 " +
-                               $"-o \"{objFullPath}\" \"{filePath}\"";
-                    if ((exitCode = await AppRunner.StartConsoleApp(Model.NasmPath, args)) != 0) {
-                        throw new Exception($"{Path.GetFileName(filePath)} build failed");
-                    }
-
-                    compiledObjects.Add(objFullPath);
+                // If build failed throw exception
+                // nasm.exe -i argument option can't escape spaces for some reason
+                var args = $"-i ..\\{Path.GetFileName(Model.GetProjectsPath())}\\ " +
+                           $"-f win32 " +
+                           $"-o \"{objFullPath}\" \"{filePath}\"";
+                if ((exitCode = await new AppRunner().StartConsoleApp(Model.NasmPath, args)) != 0) {
+                    throw new Exception($"{Path.GetFileName(filePath)} build failed");
                 }
+                
             }
             catch (Exception exception) {
                 View.PrintError(exception);
@@ -552,40 +514,44 @@ namespace UBB_NASM_Runner
             return filePath;
         }
 
-        private static void SearchFileForIncludes(string filePath, ref string includeFiles) {
+        private static List<string> GetListOfWhatToCompile(string filePath, List<string> listToCheck = null) {
+            var list = new List<string>();
             try {
-                var asmFile = File.ReadLines(filePath)
-                    .Where(line => line.Contains("%include"))
-                    .Select(line => new {Line = line});
+                const string pattern = @"^%include '([^']+)";
+                var readLines = File.ReadAllText(filePath);
+                var matches = Regex.Match(readLines, pattern, RegexOptions.Multiline);
 
-                foreach (var asmLine in asmFile) {
-                    foreach (var fragment in asmLine.Line.Split(' ')) {
-                        if (fragment.Equals("")) continue;
-                        var toInc = fragment;
-                        if (Equals(fragment[0], fragment[^1]) && Equals(fragment[0], '\'')) {
-                            toInc = fragment[1..^1];
-                        }
-
-                        if (Path.GetExtension(toInc).ToLower().Equals(".inc")) {
-                            if (!includeFiles.Contains(toInc)) {
-                                includeFiles += toInc + " ";
+                while (matches.Success) {
+                    var match = matches.Groups[1].Value;
+                    if (Path.GetExtension(match).ToLower().Equals(".inc")) {
+                        if (!new[] {"mio.inc", "io.inc"}.Contains(match)) {
+                            var path = GetFileWithSpecificCaseInsensitiveExtension(
+                                Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, match),
+                                "asm");
+                            if (path.Equals(string.Empty)) {
+                                throw new Exception($"There's no assembly file for {match}");
                             }
-
-                            if (toInc != "mio.inc" && toInc != "io.inc") {
-                                SearchFileForIncludes(
-                                    Path.Combine(Model.GetProjectsPath(), GetFileNameWithAsmExtension(toInc)),
-                                    ref includeFiles);
+                            list.Add(path);
+                            if (listToCheck == null || !listToCheck.Contains(path)) {
+                                list.AddRange(GetListOfWhatToCompile(path, list));
+                                list = list.Distinct().ToList();
                             }
                         }
-                        else if (fragment.Contains(";")) {
-                            break;
+                        else {
+                            if (!list.Contains(match)) {
+                                list.Add(match);
+                            }
                         }
                     }
+
+                    matches = matches.NextMatch();
                 }
             }
             catch (Exception exception) {
                 View.PrintError(exception);
             }
+
+            return list;
         }
 
         private static bool IsIncludeAssemblyFile(string filePath) {
